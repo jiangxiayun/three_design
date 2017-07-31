@@ -1,0 +1,26 @@
+[
+    {
+        "id":1,
+        "width":500,
+        "length":500,
+        "type":"HORIZONTAL_BOARD",
+        "name":"底板",
+        "img":"static/textures/tupian1.jpg"
+    },
+    {
+        "id":2,
+        "width":1000,
+        "length":500,
+        "type":"SIDE_BOARD",
+        "name":"左右侧板",
+        "img":"static/textures/tupian1.jpg"
+    },
+    {
+        "id":3,
+        "width":1000,
+        "length":1000,
+        "type":"VERCITAL_BOARD",
+        "name":"前后侧板",
+        "img":"static/textures/tupian1.jpg"
+    }
+]

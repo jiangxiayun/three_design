@@ -1,0 +1,18 @@
+[
+    {
+        "id":1,
+        "width":1000,
+        "height":2000,
+        "depth":1000,
+        "name" :"柜子",
+        "img":"asdasdas"
+    },
+        {
+        "id":2,
+        "width":2000,
+        "height":1000,
+        "depth":2000,
+        "name" :"大柜子",
+        "img":"asdasdas"
+    }
+]
