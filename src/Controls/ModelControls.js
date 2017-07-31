@@ -7,7 +7,7 @@ class ModelControls {
 
 
 		//添加到渲染队列 
-		designer.view.addUpdatefn( () =>{
+		designer.viewport.addRenderUpdate( () =>{
 
 			if(designer.currentModel){
 
