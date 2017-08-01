@@ -81,9 +81,17 @@ class Designer {
         this.cmds[cmd].dispatch(options); 
 
         // 推入历史栈
-        this.history.pushState({
+        console.log(this.scene)
+        if(cmd.indexOf('GET') == -1){
+            
+            this.history.pushState({
+                cmdName :cmd,
+                options : options,
+                scene : this.scene.toJSON()
+            })
+        }
 
-        })
+        console.log(this.history.getCurrentNode());
  
     }
 
@@ -94,7 +102,7 @@ class Designer {
     }
 
     undo (){
-        
+
         let scene = (this.history.undo()).scene;
         this.setScene(scene);
     }

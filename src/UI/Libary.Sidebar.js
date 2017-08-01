@@ -34,7 +34,7 @@ class LibarySidebar extends UIComponent {
         this.renderDOM();
 
         // 绑定命令
-        this.bindCommands(designer.cmds);
+        this.bindCommands(designer,designer.cmds);
 
         // 将dom添加到视图中
         super.appendToView();
@@ -89,7 +89,7 @@ class LibarySidebar extends UIComponent {
 
     }
 
-    bindCommands ( cmds ){
+    bindCommands (designer ){
 
         let data = this.data;
 
@@ -102,8 +102,7 @@ class LibarySidebar extends UIComponent {
                     'id':parseInt($(this).attr('boardId'))
                 }
             );
-
-            cmds.ADD_BOARD.dispatch(boardData);
+            designer.execCmd('ADD_BOARD',boardData);
 
         })
 
@@ -115,11 +114,11 @@ class LibarySidebar extends UIComponent {
             let currentModel ={};
 
             // 判断当前是否有模型，没有则添加，有则转换
-            cmds.GET_CURRENT_MODEL.dispatch( currentModel =>{
+             designer.execCmd('GET_CURRENT_MODEL', currentModel =>{
                 if(currentModel){
-                    cmds.CHANGE_MODEL.dispatch(modelData);
+                    designer.execCmd('CHANGE_MODE',modelData);
                 }else{
-                    cmds.ADD_MODEL.dispatch(modelData);
+                    designer.execCmd('ADD_MODEL',modelData);
                 }
 
            });

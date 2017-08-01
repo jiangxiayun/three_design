@@ -15,7 +15,7 @@ class History {
 	}
 	pushState(obj){
 		let historyStep = {};
-		historyStep.time = new Date().getUTCDate();
+		historyStep.time = new Date().getTime();
 		if( typeof obj  == 'object'){
 			historyStep.value = JSON.parse(JSON.stringify(obj));
 		}else{
@@ -40,13 +40,13 @@ class History {
 
 	}
 
-	getCurrentPointer (){
+	getStatckLength (){
 
-		return this.stateStack.length - 1;
+		return this.stateStack.length;
 	}
-	getCurrentStep() {
+	getCurrentNode() {
 
-		return this.stateStack[ this.stateStack.le  - 1];
+		return this.stateStack[ this.stateStack.length  - 1];
 	}
 
 	setHistoryPointer(point){
