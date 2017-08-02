@@ -18,8 +18,10 @@ const addBoard = (designer ,options) =>{
 			board = new SideBoard(options);
 			break;
 	}
-    board.selfFaceType = options.type;
+    board.obj.selfFaceType = options.type;
+    board.obj.name = 'board_'+designer.currentIndex;
 	board.joinScene(designer.scene);
+    designer.currentIndex++;
 	return board;
 }
 

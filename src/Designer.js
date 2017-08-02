@@ -42,6 +42,7 @@ class Designer {
 
         this.selectedBoard = null;
         this.currentModel = null;
+        this.currentIndex = 0;
 
         this.optionMode = 'input';
 
@@ -90,17 +91,17 @@ class Designer {
         this.cmds[cmd].dispatch(options); 
 
         // 推入历史栈
-        console.log(this.scene)
-        if(cmd.indexOf('GET') == -1){
-
-            this.history.pushState({
-                cmdName :cmd,
-                options : options,
-                scene : this.scene.toJSON()
-            })
-        }
-
-        console.log(this.history.getCurrentNode());
+        // console.log(this.scene)
+        // if(cmd.indexOf('GET') == -1){
+        //
+        //     this.history.pushState({
+        //         cmdName :cmd,
+        //         options : options,
+        //         scene : this.scene.toJSON()
+        //     })
+        // }
+        //
+        // console.log(this.history.getCurrentNode());
  
     }
 

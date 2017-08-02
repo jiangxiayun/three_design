@@ -48,7 +48,7 @@ class LibarySidebar extends UIComponent {
     }
     renderDOM(){
 
-        
+
         super.renderDOM(this.data);
 
         let modelData = this.data.modelData,
@@ -70,7 +70,7 @@ class LibarySidebar extends UIComponent {
                 </div>
             </div>`)
         })
-        
+
         // 板材html
         boardData.forEach( (board) => {
             $wrapper
@@ -97,12 +97,12 @@ class LibarySidebar extends UIComponent {
         $("body").on("click",'#libary .board',function(e) {
 
             let boardData =  _.find(
-                data.boardData, 
-                { 
+                data.boardData,
+                {
                     'id':parseInt($(this).attr('boardId'))
                 }
             );
-            designer.modelControls.beginInsert(boardData)
+            designer.modelControls.beginInsert(designer, boardData)
             // designer.execCmd('ADD_BOARD',boardData);
 
         })
@@ -128,11 +128,11 @@ class LibarySidebar extends UIComponent {
                 }
 
            });
-           
+
         })
 
 
-       
+
     }
 }
 

@@ -79,6 +79,7 @@ class Commands {
             }
 
             designer.sceneObjects = [...(Object.values(model.faces))]
+            designer.modelControls.enabled = true;   //激活 modelControls
 
 		})
 

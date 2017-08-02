@@ -9,7 +9,8 @@ class UI {
     constructor(designer ,data , uiSizeData){
 
         new LibarySidebar(designer ,data.libaryData,uiSizeData.libaryWidth);
-        
+        new BottomMenu(designer);
+
     }
 
 }

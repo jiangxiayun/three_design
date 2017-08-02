@@ -1,10 +1,10 @@
 import * as THREE from "three";
 import addBoard from "../Commands/addBoard.command.js";
-import { BOARDCONFIG } from "../Config/config"
+import { BOARDCONFIG, TEXTURECONFIG, MODELCONFIG } from "../Config/config"
 
 
 const planeMaterial = new THREE.MeshBasicMaterial( {color: 0xe8c582, transparent: true, opacity: 0.2} );  // 操作区域平面原始材质
-
+const TextureLoader = new THREE.TextureLoader();
 
 class ModelControls {
 
@@ -16,27 +16,22 @@ class ModelControls {
 
         designer.modelControls = this;
         let scope = this;
-        scope.enabled = true;
+        scope.enabled = false;
         scope.startADDING = false;
-
+        scope.cubeForPreview = null;
 
         let _raycaster = new THREE.Raycaster();
-        let _selected = null, _hovered = null, _movingCube = null;
+        let _hovered = null, _movingCube = null;
+        let _highlightBoxClick, _highlightBoxHover;
         let _selectedPlane = null;   // 鼠标选取的操作区域面，取远处的面
         let _mouse = new THREE.Vector2();
         let onDownPosition = new THREE.Vector2();
         let onUpPosition = new THREE.Vector2();
 
-
-        let _highlightBoxClick, _highlightBoxHover;
-
-        let hadOrthogonal = []
-
-        let spaceEnough = true   // 标记空间容量，true为能添加，false为空间不足无法添加
-
-
-
-
+        let hadOrthogonal = [];
+        let spaceEnough = true;  // 标记空间容量，true为能添加，false为空间不足无法添加
+        let addCubePosition = new THREE.Vector3(); // 新增板材的 position
+        let addCubeOptions = {};  // 新增板材的尺寸
 
 
 		//添加到渲染队列
@@ -58,7 +53,7 @@ class ModelControls {
 
             event.preventDefault();
 
-            if(!designer.currentModel) return;
+            if(!scope.enabled) return;
 
             let array = getMousePosition(_domElement, event.clientX, event.clientY);
             let movePosition = new THREE.Vector2()
@@ -71,9 +66,8 @@ class ModelControls {
 
         function onMouseDown(event) {
 
-
             event.preventDefault();
-
+            if(!scope.enabled) return;
 
             var array = getMousePosition(_domElement, event.clientX, event.clientY);
             onDownPosition.fromArray(array);
@@ -85,15 +79,13 @@ class ModelControls {
 
         function onMouseUp(event) {
 
-
-            var vector = transformAxis();
-            // console.log('vector',vector)
-
+            event.preventDefault();
+            if(!scope.enabled) return;
 
             var array = getMousePosition(_domElement, event.clientX, event.clientY);
             onUpPosition.fromArray(array);
 
-            console.log('startADDING',scope.startADDING)
+            console.log('startADDING',scope.startADDING);
             if (scope.startADDING) {
 
                 if (onDownPosition.distanceTo(onUpPosition) === 0) {
@@ -106,16 +98,22 @@ class ModelControls {
                             beforeInsertCube(_selectedPlane)
                         }
 
+                        joinBoardToSecen();
+
                         // appendObjectsList()
                     } else {
-                        cancelAdding()
 
+                        // cancelAdding()
                         if(!spaceEnough){
                             alert('空间不足')
                         }
                     }
 
-                    scope.startADDING = false
+                    scope.startADDING = false;
+                    if(scope.cubeForPreview){
+                        scope.cubeForPreview.visible = false;
+                    }
+
                 }
 
             } else {
@@ -132,7 +130,6 @@ class ModelControls {
             // 当点击过程中鼠标无移动的情况下，避免移动、旋转场景事件混乱
             if (onDownPosition.distanceTo(onUpPosition) === 0) {
 
-
                 var intersects = getIntersects(onUpPosition, designer.sceneObjects);
 
                 if (intersects.length > 0) {
@@ -141,11 +138,12 @@ class ModelControls {
 
                         if(!intersects[i].object.isModelFace && intersects[i].object.geometry instanceof THREE.BoxGeometry){
 
-                            if(_selected != intersects[i].object){
-                                let object = intersects[i].object
+                            if(designer.selectedBoard != intersects[i].object){
 
-                                _selected = object;
-                                addHightBox(_selected,'Click')
+                                let object = intersects[i].object;
+
+                                designer.selectedBoard = object;
+                                addHightBox(designer.selectedBoard,'Click');
 
                                 // 标记面板 list 选择状态
                                 // signCubeList(object)
@@ -153,7 +151,7 @@ class ModelControls {
 
                             break
                         }
-                        _selected = null;
+                        designer.selectedBoard = null
                         deleteHelps('Click')
                         // deleteMeshSetPlane()
                     }
@@ -163,16 +161,14 @@ class ModelControls {
 
                 } else {
 
-                    _selected = null;
+                    designer.selectedBoard = null
                     deleteHelps('Click')
                     // deleteMeshSetPlane()
 
                 }
 
-                // render();
 
             }
-
 
         }
 
@@ -238,7 +234,7 @@ class ModelControls {
                 // 预览
                 if( designer.GLOBAL_CONFIG.addPreviewSet && scope.startADDING){
 
-                    beforeInsertCube(_selectedPlane, _addingBoject)
+                    beforeInsertCube(_selectedPlane)
 
                 }
 
@@ -246,8 +242,8 @@ class ModelControls {
 
                 _selectedPlane = null
 
-                if (scope.startADDING) {
-                    // _addingBoject.visible = false
+                if (scope.startADDING && designer.GLOBAL_CONFIG.addPreviewSet) {
+                    scope.cubeForPreview.visible = false
                 }
 
 
@@ -256,26 +252,19 @@ class ModelControls {
 
         }
 
-        function initPlaneColor() {
-            let modelFacesGroup = Object.values(designer.currentModel.faces)
-            for (let i = 0; i < modelFacesGroup.length; i++) {
-                modelFacesGroup[i].material = planeMaterial
-            }
-        }
+
 
         function beforeInsertCube(selectedPlane) {
 
             if(!selectedPlane) return
 
-            // console.log('face',selectedPlane.face.normal)
             let position = new THREE.Vector3(Math.round(selectedPlane.point.x), Math.round(selectedPlane.point.y), Math.round(selectedPlane.point.z))
-
 
             collision(designer.sceneObjects, position, selectedPlane)
 
             if(designer.GLOBAL_CONFIG.alignSet){
-                let cubeFaceType = addobject.selfFaceType
 
+                let cubeFaceType = addobject.selfFaceType
                 switch (cubeFaceType){
                     case 'XY':
                         tobeAalign(addobject,'z' )
@@ -292,97 +281,49 @@ class ModelControls {
         }
 
 
-        // 检测碰撞
+        // 检测碰撞计算面积尺寸
         function collision(collisionArray, position, selectedObject) {
 
             hadOrthogonal = []
-            // hadOrthogonal = [selectedObject.object]
 
             // 获取中心点坐标
             let originPoint = position;
-
             console.log('position2222', originPoint)
 
-            let objectFaceType = selectedObject.object.selfFaceType   // 点击时与鼠标射线相交的物体
-
-            let cubeFaceType = scope.addType
-
-            let canBuildArea = {}  // 点击处朝6个正交方向可延伸的最大坐标
-            let faceNormal = new THREE.Vector3()
-
+            let cubeFaceType = scope.addType; // 要添加的板材的类型
+            let canBuildArea = {};  // 点击处朝6个正交方向可延伸的最大坐标
+            let faceNormal = new THREE.Vector3();
             let createBox = designer.GLOBAL_CONFIG.modelSize;
+            console.log('模型尺寸：',createBox)
+
             /*沿点击面的面向量方向延伸0.1个单位*/
-
             if( selectedObject.object.isModelFace){
-                let mesh = selectedObject.object
 
-                if(mesh.position.x == createBox.x){
+                let mesh = selectedObject.object
+                if(mesh.position.x == createBox.width + MODELCONFIG.MODEL_FACE_DEPTH / 2){
                     faceNormal.set(-0.1,0,0)
                 }
-                if(mesh.position.x == 0){
+                if(mesh.position.x == - MODELCONFIG.MODEL_FACE_DEPTH / 2){
                     faceNormal.set(0.1,0,0)
                 }
-                if(mesh.position.y == createBox.y){
+                if(mesh.position.y == createBox.height + MODELCONFIG.MODEL_FACE_DEPTH / 2){
                     faceNormal.set(0,-0.1,0)
                 }
-                if(mesh.position.y == 0){
+                if(mesh.position.y == - MODELCONFIG.MODEL_FACE_DEPTH / 2){
                     faceNormal.set(0,0.1,0)
                 }
-                if(mesh.position.z == createBox.z){
+                if(mesh.position.z == createBox.depth + MODELCONFIG.MODEL_FACE_DEPTH / 2){
                     faceNormal.set(0,0,-0.1)
                 }
-                if(mesh.position.z == 0){
+                if(mesh.position.z == - MODELCONFIG.MODEL_FACE_DEPTH / 2){
                     faceNormal.set(0,0,0.1)
                 }
 
 
             }else{
 
-                let geoVerticesTure = {
-                    objectMinX:originPoint.x,
-                    objectMaxX:originPoint.x,
-                    objectMinY:originPoint.y,
-                    objectMaxY:originPoint.y,
-                    objectMinZ:originPoint.z,
-                    objectMaxZ:originPoint.z,
-                }
-
                 let mesh = selectedObject.object
-                let geo = mesh.geometry;
-                for(let i in geo.vertices){
-                    let globaVer = geo.vertices[i].clone().applyMatrix4(mesh.matrix);
-                    // console.log('vertices',geo.vertices[i])
-                    globaVer.x = Math.round(globaVer.x)
-                    globaVer.y = Math.round(globaVer.y)
-                    globaVer.z = Math.round(globaVer.z)
-
-                    if(globaVer.x > geoVerticesTure.objectMaxX){
-                        geoVerticesTure.objectMaxX = globaVer.x
-
-                    }
-                    if(globaVer.x < geoVerticesTure.objectMinX){
-                        geoVerticesTure.objectMinX = globaVer.x
-
-                    }
-                    if(globaVer.y > geoVerticesTure.objectMaxY){
-                        geoVerticesTure.objectMaxY = globaVer.y
-
-                    }
-                    if(globaVer.y < geoVerticesTure.objectMinY){
-                        geoVerticesTure.objectMinY = globaVer.y
-
-                    }
-                    if(globaVer.z > geoVerticesTure.objectMaxZ){
-                        geoVerticesTure.objectMaxZ = globaVer.z
-
-
-                    }
-                    if(globaVer.z < geoVerticesTure.objectMinZ){
-                        geoVerticesTure.objectMinZ = globaVer.z
-
-                    }
-
-                }
+                let geoVerticesTure = getGeometrySizeOptions(mesh)
 
 
                 // 点在左侧面
@@ -411,14 +352,7 @@ class ModelControls {
                 }
             }
 
-
-
-
-
-
-
-
-            console.log('faceNormal',faceNormal)
+            console.log('faceNormal面向量',faceNormal)
             let rayOrigin = originPoint.clone().add(faceNormal)
 
             // 沿 X 轴正方向射线
@@ -435,29 +369,20 @@ class ModelControls {
             canBuildArea.minZ = Math.round(rayCollision(rayOrigin,new THREE.Vector3(0,0,-1) ).z)
 
 
-
-
             console.log('canBuildArea:', canBuildArea)
             console.log('hadOrthogonal:', hadOrthogonal)
 
 
 
             let nearMeshAxes = Object.assign({},canBuildArea)
+
             for(let i=0;i<collisionArray.length;i++){
                 // 不再检测之前与6条正交射线相交的物体
                 if(hadOrthogonal.indexOf(collisionArray[i]) <= -1){
+
                     let mesh = collisionArray[i]
-                    let geo = mesh.geometry;
-                    geo.computeBoundingBox();
-                    let geometrySize = (geo.boundingBox.getSize()).multiply( mesh.scale );
-                    // console.log('geometrySize',geometrySize)
-                    // 获取该物体顶点坐标区间
-                    let minX = mesh.position.x - Math.round(geometrySize.x) / 2
-                    let maxX = mesh.position.x + Math.round(geometrySize.x) / 2
-                    let minY = mesh.position.y - Math.round(geometrySize.y) / 2
-                    let maxY = mesh.position.y + Math.round(geometrySize.y) / 2
-                    let minZ = mesh.position.z - Math.round(geometrySize.z) / 2
-                    let maxZ = mesh.position.z + Math.round(geometrySize.z) / 2
+
+                    let geoVerticesTure = getGeometrySizeOptions(mesh);
 
                     switch (cubeFaceType){
                         case 'VERCITAL_BOARD':
@@ -479,28 +404,28 @@ class ModelControls {
 
 
                             // 当该物体处于 Y 长度范围内，且在高度平面内
-                            let judgeInY = minY >= canBuildArea.maxY || maxY <= canBuildArea.minY
-                            let judgeInZ = minZ >= canZmax || maxZ<= canZmin
+                            let judgeInY = geoVerticesTure.objectMinY >= canBuildArea.maxY || geoVerticesTure.objectMaxY <= canBuildArea.minY
+                            let judgeInZ = geoVerticesTure.objectMinZ >= canZmax || geoVerticesTure.objectMaxZ <= canZmin
 
                             if(!judgeInY && !judgeInZ){
                                 // 物体在右侧，取得最大 X
-                                if(originPoint.x < minX){
+                                if(originPoint.x < geoVerticesTure.objectMinX){
                                     if(nearMeshAxes.maxX){
-                                        if(nearMeshAxes.maxX > minX){
-                                            nearMeshAxes.maxX = minX
+                                        if(nearMeshAxes.maxX > geoVerticesTure.objectMinX){
+                                            nearMeshAxes.maxX = geoVerticesTure.objectMinX
                                         }
                                     }else{
-                                        nearMeshAxes.maxX = minX
+                                        nearMeshAxes.maxX = geoVerticesTure.objectMinX
                                     }
                                 }else{
-                                    // 物体在左侧，取得最小 X
 
+                                    // 物体在左侧，取得最小 X
                                     if(nearMeshAxes.minX){
-                                        if(nearMeshAxes.minX < maxX){
-                                            nearMeshAxes.minX = maxX
+                                        if(nearMeshAxes.minX < geoVerticesTure.objectMaxX){
+                                            nearMeshAxes.minX = geoVerticesTure.objectMaxX
                                         }
                                     }else{
-                                        nearMeshAxes.minX = maxX
+                                        nearMeshAxes.minX = geoVerticesTure.objectMaxX
                                     }
 
                                 }
@@ -527,28 +452,30 @@ class ModelControls {
 
 
                             // 当该物体处于 Y 长度范围内，且在高度平面内
-                            let judgeInY = minY >= canBuildArea.maxY || maxY <= canBuildArea.minY
-                            let judgeInX = minX >= canXmax || maxX<= canXmin
+                            let judgeInY = geoVerticesTure.objectMinY >= canBuildArea.maxY || geoVerticesTure.objectMaxY <= canBuildArea.minY
+                            let judgeInX = geoVerticesTure.objectMinX >= canXmax || geoVerticesTure.objectMaxX <= canXmin
 
                             if(!judgeInY && !judgeInX){
+
                                 // 物体在前侧，取得最大 Z
-                                if(originPoint.z < minZ){
+                                if(originPoint.z < geoVerticesTure.objectMinZ){
                                     if(nearMeshAxes.maxZ){
-                                        if(nearMeshAxes.maxZ > minZ){
-                                            nearMeshAxes.maxZ = minZ
+                                        if(nearMeshAxes.maxZ > geoVerticesTure.objectMinZ){
+                                            nearMeshAxes.maxZ = geoVerticesTure.objectMinZ
                                         }
                                     }else{
-                                        nearMeshAxes.maxZ = minZ
+                                        nearMeshAxes.maxZ = geoVerticesTure.objectMinZ
                                     }
                                 }else{
-                                    // 物体在后侧，取得最小 Z
 
+                                    // 物体在后侧，取得最小 Z
                                     if(nearMeshAxes.minZ){
-                                        if(nearMeshAxes.minZ < maxZ){
-                                            nearMeshAxes.minZ = maxZ
+                                        if(nearMeshAxes.minZ < geoVerticesTure.objectMaxZ){
+
+                                            nearMeshAxes.minZ = geoVerticesTure.objectMaxZ
                                         }
                                     }else{
-                                        nearMeshAxes.minZ = maxZ
+                                        nearMeshAxes.minZ = geoVerticesTure.objectMaxZ
                                     }
 
                                 }
@@ -561,8 +488,8 @@ class ModelControls {
                             // 先定Z轴方向可延伸长度，再定X轴方向可延伸长度（横板）
 
                             // 计算添加板材时最大y和最小y,当点击位置距离边界值距离不足厚度一半时，需要平移坐标到刚好平行的位置，避免重叠
-                            let canYmin = originPoint.y - BOARDCONFIG.thickness / 2
-                            let canYmax = originPoint.y + BOARDCONFIG.thickness / 2
+                            let canYmin = originPoint.y - BOARDCONFIG.thickness / 2;
+                            let canYmax = originPoint.y + BOARDCONFIG.thickness / 2;
 
                             // 当点击处向下延伸厚度一半时，会与下侧板材重叠的情况下
                             if ((originPoint.y - canBuildArea.minY) >=0  && (originPoint.y - canBuildArea.minY ) < (BOARDCONFIG.thickness / 2) ){
@@ -577,29 +504,29 @@ class ModelControls {
 
 
                             // 当该物体处于 Z 长度范围内，且在高度平面内
-                            let judgeInZ = minZ >= canBuildArea.maxZ || maxZ <= canBuildArea.minZ
-                            let judgeInY = minY >= canYmax || maxY<= canYmin
+                            let judgeInZ = geoVerticesTure.objectMinZ >= canBuildArea.maxZ || geoVerticesTure.objectMaxZ <= canBuildArea.minZ;
+                            let judgeInY = geoVerticesTure.objectMinY >= canYmax || geoVerticesTure.objectMaxY <= canYmin;
 
 
                             if(!judgeInZ && !judgeInY){
                                 // 物体在右侧，取得最大 X
-                                if(originPoint.x < minX){
+                                if(originPoint.x < geoVerticesTure.objectMinX){
                                     if(nearMeshAxes.maxX){
-                                        if(nearMeshAxes.maxX > minX){
-                                            nearMeshAxes.maxX = minX
+                                        if(nearMeshAxes.maxX > geoVerticesTure.objectMinX){
+                                            nearMeshAxes.maxX = geoVerticesTure.objectMinX
                                         }
                                     }else{
-                                        nearMeshAxes.maxX = minX
+                                        nearMeshAxes.maxX = geoVerticesTure.objectMinX
                                     }
                                 }else{
                                     // 物体在左侧，取得最小 X
-                                    console.log('mesh',mesh)
                                     if(nearMeshAxes.minX){
-                                        if(nearMeshAxes.minX < maxX){
-                                            nearMeshAxes.minX = maxX
+                                        console.log(mesh)
+                                        if(nearMeshAxes.minX < geoVerticesTure.objectMaxX){
+                                            nearMeshAxes.minX = geoVerticesTure.objectMaxX
                                         }
                                     }else{
-                                        nearMeshAxes.minX = maxX
+                                        nearMeshAxes.minX = geoVerticesTure.objectMaxX
                                     }
 
                                 }
@@ -613,15 +540,14 @@ class ModelControls {
             }
 
 
-            console.log('nearMeshAxes:', nearMeshAxes)
+            console.log('nearMeshAxes遍历后个方向的临界值:', nearMeshAxes)
 
 
 
-            let newPosition = new THREE.Vector3()
+            
 
             switch (cubeFaceType) {
                 case 'VERCITAL_BOARD':
-
                 {
                     let distanceX = nearMeshAxes.maxX - nearMeshAxes.minX;
                     let distanceY = canBuildArea.maxY - canBuildArea.minY;
@@ -636,32 +562,31 @@ class ModelControls {
                             originPoint.z = canBuildArea.maxZ - BOARDCONFIG.thickness / 2
                         }
 
-                        newPosition.set(nearMeshAxes.maxX - distanceX / 2, canBuildArea.maxY - distanceY / 2, originPoint.z)
-                        console.log('XY背板:', newPosition)
+                        addCubePosition.set(nearMeshAxes.maxX - distanceX / 2, canBuildArea.maxY - distanceY / 2, originPoint.z);
+                        console.log('XY背板:', addCubePosition);
 
-                        if(!designer.GLOBAL_CONFIG.addPreviewSet){
-                            let size = {
-                                length: distanceX,
-                                width: distanceY ,
-                                position: newPosition
-                            }
-                            let options = Object.assign({}, scope.boardOptions, size)
-                            designer.execCmd('ADD_BOARD',options)
-                        }else{
-                            moveingObj.scale.set(distanceX, distanceY, BOARDCONFIG.thickness)
-                            // moveingObj.scale.set(distanceX, BOARDCONFIG.thickness, distanceY)
-                            // moveingObj.rotateX( - Math.PI / 2 )
-                            moveingObj.position.copy(newPosition)
-                            moveingObj.visible = true
-                            _selected = moveingObj
+
+                        addCubeOptions = {
+                            length: distanceX,
+                            width: distanceY ,
+                            position: addCubePosition
+                        };
+
+                        if(designer.GLOBAL_CONFIG.addPreviewSet){
+
+                            scope.cubeForPreview.scale.set(distanceX, distanceY, BOARDCONFIG.thickness);
+                            scope.cubeForPreview.position.copy(addCubePosition);
+                            scope.cubeForPreview.visible = true
+
                         }
+
 
                         spaceEnough = true
 
                     }else{
-                        console.log('空间不足XY')
-                        moveingObj.visible = false
-                        spaceEnough = false
+                        console.log('空间不足XY');
+                        scope.cubeForPreview.visible = false;
+                        spaceEnough = false;
                     }
                 }
                     break;
@@ -681,37 +606,36 @@ class ModelControls {
                             originPoint.x = canBuildArea.maxX - BOARDCONFIG.thickness / 2
                         }
 
-                        newPosition.set(originPoint.x, canBuildArea.maxY - distanceY / 2, nearMeshAxes.maxZ - distanceZ / 2)
-                        console.log('ZY:', newPosition)
+                        addCubePosition.set(originPoint.x, canBuildArea.maxY - distanceY / 2, nearMeshAxes.maxZ - distanceZ / 2);
+                        console.log('ZY:', addCubePosition);
                         // moveingObj.scale.set(distanceY, BOARDCONFIG.thickness, distanceZ)
                         // moveingObj.rotateZ( - Math.PI / 2 )
-                        if(!designer.GLOBAL_CONFIG.addPreviewSet){
-                            let size = {
-                                length: distanceZ,
-                                width: distanceY ,
-                                position: newPosition
-                            }
-                            let options = Object.assign({}, scope.boardOptions, size)
-                            designer.execCmd('ADD_BOARD',options)
-                        }else{
-                            moveingObj.scale.set(BOARDCONFIG.thickness, distanceY, distanceZ)
-                            moveingObj.position.copy(newPosition)
 
-                            moveingObj.visible = true
-                            _selected = moveingObj
+                        addCubeOptions = {
+                            length: distanceZ,
+                            width: distanceY ,
+                            position: addCubePosition
+                        };
+
+                        if(designer.GLOBAL_CONFIG.addPreviewSet){
+
+                            scope.cubeForPreview.scale.set(BOARDCONFIG.thickness, distanceY, distanceZ);
+                            scope.cubeForPreview.position.copy(addCubePosition);
+                            scope.cubeForPreview.visible = true;
+
                         }
 
-                        spaceEnough = true
+
+                        spaceEnough = true;
 
                     }else{
-                        console.log('空间不足ZY')
-                        moveingObj.visible = false
-                        spaceEnough = false
+                        console.log('空间不足ZY');
+                        scope.cubeForPreview.visible = false;
+                        spaceEnough = false;
                     }
                 }
                     break;
                 case 'HORIZONTAL_BOARD':
-
                 {
                     let distanceX = nearMeshAxes.maxX - nearMeshAxes.minX;
                     let distanceZ = canBuildArea.maxZ - canBuildArea.minZ;
@@ -727,34 +651,27 @@ class ModelControls {
                             originPoint.y = canBuildArea.maxY - BOARDCONFIG.thickness / 2
                         }
 
-                        newPosition.set(nearMeshAxes.maxX - distanceX / 2, originPoint.y, canBuildArea.maxZ - distanceZ / 2)
+                        addCubePosition.set(nearMeshAxes.maxX - distanceX / 2, originPoint.y, canBuildArea.maxZ - distanceZ / 2);
+                        addCubeOptions = {
+                            length: distanceX,
+                            width: distanceZ ,
+                            position: addCubePosition
+                        };
 
-                        console.log('newPosition:', newPosition)
+                        if(designer.GLOBAL_CONFIG.addPreviewSet){
 
-                        if(!designer.GLOBAL_CONFIG.addPreviewSet){
-                            // this.makeUpBoard(new THREE.Vector3(distanceX, BOARDCONFIG.thickness, distanceZ), newPosition)
-                            let size = {
-                                length: distanceX,
-                                width: distanceZ ,
-                                position: newPosition
-                            }
-                            let options = Object.assign({}, scope.boardOptions, size)
+                            scope.cubeForPreview.scale.set(distanceX, BOARDCONFIG.thickness, distanceZ);
+                            scope.cubeForPreview.position.copy(addCubePosition);
+                            scope.cubeForPreview.visible = true;
 
-                            designer.execCmd('ADD_BOARD',options)
-                        }else{
-                            moveingObj.scale.set(distanceX, BOARDCONFIG.thickness, distanceZ)
-                            moveingObj.position.copy(newPosition)
-                            moveingObj.visible = true
-                            _selected = moveingObj
                         }
 
-
-                        spaceEnough = true
+                        spaceEnough = true;
 
                     }else{
-                        console.log('空间不足XZ')
-                        moveingObj.visible = false
-                        spaceEnough = false
+                        console.log('空间不足XZ');
+                        scope.cubeForPreview.visible = false;
+                        spaceEnough = false;
                     }
                 }
                     break;
@@ -764,6 +681,65 @@ class ModelControls {
 
 
 
+        }
+        
+        function joinBoardToSecen() {
+
+            console.log('addCubePosition:', addCubeOptions);
+
+            let options = Object.assign({}, scope.boardOptions, addCubeOptions);
+
+            designer.execCmd('ADD_BOARD',options);
+        }
+
+        // 计算几何体顶点区间
+        function getGeometrySizeOptions(mesh) {
+
+            let geo = mesh.geometry;
+            let geoVerticesTure = {
+                objectMaxX: mesh.position.x,
+                objectMinX: mesh.position.x,
+                objectMaxY: mesh.position.y,
+                objectMinY: mesh.position.y,
+                objectMaxZ: mesh.position.z,
+                objectMinZ: mesh.position.z,
+            }
+
+            for(let i in geo.vertices){
+                let globaVer = geo.vertices[i].clone().applyMatrix4(mesh.matrix);
+                globaVer.x = Math.round(globaVer.x)
+                globaVer.y = Math.round(globaVer.y)
+                globaVer.z = Math.round(globaVer.z)
+
+                if(globaVer.x > geoVerticesTure.objectMaxX){
+                    geoVerticesTure.objectMaxX = globaVer.x
+
+                }
+                if(globaVer.x < geoVerticesTure.objectMinX){
+                    geoVerticesTure.objectMinX = globaVer.x
+
+                }
+                if(globaVer.y > geoVerticesTure.objectMaxY){
+                    geoVerticesTure.objectMaxY = globaVer.y
+
+                }
+                if(globaVer.y < geoVerticesTure.objectMinY){
+                    geoVerticesTure.objectMinY = globaVer.y
+
+                }
+                if(globaVer.z > geoVerticesTure.objectMaxZ){
+                    geoVerticesTure.objectMaxZ = globaVer.z
+
+
+                }
+                if(globaVer.z < geoVerticesTure.objectMinZ){
+                    geoVerticesTure.objectMinZ = globaVer.z
+
+                }
+
+            }
+
+            return geoVerticesTure;
         }
 
         /*
@@ -890,12 +866,15 @@ class ModelControls {
 
         }
 
-        function getSelected() {
-            return _selected
-        }
+        // function cancelAdding() {
+        //     self.startADDING = false
+        // }
 
-        function setSelected(mesh) {
-            _selected = mesh
+        function initPlaneColor() {
+            let modelFacesGroup = Object.values(designer.currentModel.faces)
+            for (let i = 0; i < modelFacesGroup.length; i++) {
+                modelFacesGroup[i].material = planeMaterial
+            }
         }
 
         // 选择的 Plane 变色处理
@@ -906,19 +885,6 @@ class ModelControls {
             mesh.material = materialUpdate
         }
 
-        function transformAxis() {
-            var rect = _domElement.getBoundingClientRect();  // 返回元素的大小及其相对于视口的位置
-
-            _mouse.x = ( (event.clientX - rect.left) / rect.width ) * 2 - 1;
-            _mouse.y = - ( (event.clientY - rect.top) / rect.height ) * 2 + 1;
-
-            // _mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-            // _mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
-
-            var vector = new THREE.Vector3( _mouse.x , _mouse.y, 0.5);
-            vector = vector.unproject(_camera);
-            return vector;
-        }
 
         // 转换坐标
         function getMousePosition( dom, x, y ) {
@@ -943,15 +909,22 @@ class ModelControls {
 	}
 
 
-    beginInsert(options){
+    beginInsert(designer, options){
 	    let self = this;
         self.startADDING = true;
 
         self.boardOptions = options;
         self.addType = options.type;
 
+        if(!self.cubeForPreview && designer.GLOBAL_CONFIG.addPreviewSet){
 
+            let texture = TextureLoader.load( options.img );
+            texture.anisotropy = TEXTURECONFIG.maxAnisotropy;
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 
+            self.cubeForPreview = new THREE.Mesh(new THREE.BoxGeometry(1, 1,1), new THREE.MeshBasicMaterial({ map: texture }))
+            self.cubeForPreview.visible = false;
+        }
     }
 
     makeUpBoard(){
