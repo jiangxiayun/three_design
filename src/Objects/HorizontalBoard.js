@@ -11,7 +11,7 @@ class HorizontalBoard extends Board {
 		this.obj.rotation.x = Math.PI / 2;
 
 		if(options.position){
-			this.obj.position.copy(position);
+			this.obj.position.copy(options.position);
 		}else{
 			this.obj.position.x = this.length / 2;
 			this.obj.position.z = this.width / 2;

@@ -72,6 +72,14 @@ class Commands {
 			let model = addModel( designer.scene ,options);
 
 			designer.currentModel = model;
+            designer.GLOBAL_CONFIG.modelSize = {
+                width:options.width,
+                height:options.height,
+                depth:options.depth,
+            }
+
+            designer.sceneObjects = [...(Object.values(model.faces))]
+
 		})
 
 
@@ -82,10 +90,12 @@ class Commands {
         })
 
 		// 添加板材
+
         designer.cmds.ADD_BOARD.add( (options) =>{
 
-        	let board = addBoard( designer.scene ,options);
+        	let board = addBoard( designer ,options);
         	designer.boards.push(board);
+        	designer.sceneObjects.push(board.obj);
         })
 
 		// 修改板材

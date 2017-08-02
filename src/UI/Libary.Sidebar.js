@@ -102,7 +102,8 @@ class LibarySidebar extends UIComponent {
                     'id':parseInt($(this).attr('boardId'))
                 }
             );
-            designer.execCmd('ADD_BOARD',boardData);
+            designer.modelControls.beginInsert(boardData)
+            // designer.execCmd('ADD_BOARD',boardData);
 
         })
 
@@ -110,7 +111,12 @@ class LibarySidebar extends UIComponent {
         $("body").on("click",'#libary .model',function(e) {
 
             // TODO:获取模型数据
-            let modelData = {}
+            let modelData = _.find(
+                data.modelData,
+                {
+                    'id':parseInt($(this).attr('modelid'))
+                }
+            );
             let currentModel ={};
 
             // 判断当前是否有模型，没有则添加，有则转换

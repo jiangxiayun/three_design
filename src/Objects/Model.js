@@ -2,7 +2,7 @@
 import * as THREE from "three";
 import _ from "lodash";
 
-const MODEL_FACE_DEPTH = 5;
+const MODEL_FACE_DEPTH = 0.2;
 
 export const FaceType = {
     BOTTOM : 'BOTTOM',
@@ -28,18 +28,19 @@ export const BoardType = {
  */
 const setFacesSize = Symbol('setFacesSize');
 const createModelFaces = Symbol('createModelFaces');
+const createModelBoxHelper = Symbol('createModelBoxHelper');
 class Model {
 
     constructor (options ) {
 
-       
         this.initSize = options.size;
         this.size = options.size ; 
         this.name = options.name ;
 
         this.faces = {} ;
+        this.facesBoxHelper = null ;
         this.materialOptions = options.materialOptions || {
-            color: 0x00ff00,
+            color: 0xe8c582,
             opacity :0.2,
             transparent:true
         }
@@ -69,13 +70,13 @@ class Model {
             switch (faceType){
 
                 case FaceType.BOTTOM :
-                    mesh = new THREE.Mesh(  new THREE.BoxGeometry ( 1,1,1 ) ,createMaterial()  ) ; 
+                    mesh = new THREE.Mesh(  new THREE.BoxGeometry ( size.width,MODEL_FACE_DEPTH,size.depth ) ,createMaterial()  ) ;
 
-                    mesh.scale.set(size.width ,size.depth ,MODEL_FACE_DEPTH);
-                    mesh.rotation.x = Math.PI / 2 ;
+                    // mesh.scale.set(size.width ,size.depth ,MODEL_FACE_DEPTH);
+                    // mesh.rotation.x = Math.PI / 2 ;
 
                     mesh.position.x = size.width / 2;
-                    mesh.position.y = MODEL_FACE_DEPTH / 2;
+                    mesh.position.y = - MODEL_FACE_DEPTH / 2;
                     mesh.position.z = size.depth / 2;
 
                     mesh.boardType = BoardType.HORIZONTAL;
@@ -83,13 +84,13 @@ class Model {
                     this.faces.bottomFace = mesh;
                     break;
                 case FaceType.TOP :
-                    mesh = new THREE.Mesh(  new THREE.BoxGeometry ( 1,1,1 ) ,createMaterial()  ) ; 
+                    mesh = new THREE.Mesh(  new THREE.BoxGeometry ( size.width,MODEL_FACE_DEPTH,size.depth ) ,createMaterial()  ) ;
 
-                    mesh.scale.set(size.width ,size.depth ,MODEL_FACE_DEPTH);
-                    mesh.rotation.x = Math.PI / 2 ;
+                    // mesh.scale.set(size.width ,size.depth ,MODEL_FACE_DEPTH);
+                    // mesh.rotation.x = Math.PI / 2 ;
 
                     mesh.position.x = size.width / 2;
-                    mesh.position.y = size.height  - MODEL_FACE_DEPTH / 2;
+                    mesh.position.y = size.height  + MODEL_FACE_DEPTH / 2;
                     mesh.position.z = size.depth / 2;
 
                     mesh.boardType = BoardType.HORIZONTAL;
@@ -97,14 +98,14 @@ class Model {
                     this.faces.topFace = mesh;
                     break;
                 case FaceType.BACK :
-                    mesh = new THREE.Mesh(  new THREE.BoxGeometry ( 1,1,1 ) ,createMaterial()  ) ; 
+                    mesh = new THREE.Mesh(  new THREE.BoxGeometry ( size.width,size.height,MODEL_FACE_DEPTH ) ,createMaterial()  ) ;
 
-                    mesh.scale.set(size.width ,size.height ,MODEL_FACE_DEPTH);
+                    // mesh.scale.set(size.width ,size.height ,MODEL_FACE_DEPTH);
                     //  mesh.rotation.x = Math.PI / 2 ;
 
                     mesh.position.x = size.width / 2;
                     mesh.position.y = size.height / 2;
-                    mesh.position.z = MODEL_FACE_DEPTH / 2;
+                    mesh.position.z = - MODEL_FACE_DEPTH / 2;
 
                     mesh.boardType = BoardType.VERTICAL;
                     
@@ -112,14 +113,14 @@ class Model {
                     this.faces.backFace = mesh;
                     break;
                 case FaceType.FRONT :
-                    mesh = new THREE.Mesh(  new THREE.BoxGeometry (1,1,1  ) ,createMaterial()  ) ; 
+                    mesh = new THREE.Mesh(  new THREE.BoxGeometry (size.width,size.height,MODEL_FACE_DEPTH  ) ,createMaterial()  ) ;
 
-                    mesh.scale.set(size.width ,size.height ,MODEL_FACE_DEPTH);
+                    // mesh.scale.set(size.width ,size.height ,MODEL_FACE_DEPTH);
                     //  mesh.rotation.x = Math.PI / 2 ;
 
                     mesh.position.x = size.width / 2;
                     mesh.position.y = size.height / 2;
-                    mesh.position.z = size.depth - MODEL_FACE_DEPTH / 2;
+                    mesh.position.z = size.depth + MODEL_FACE_DEPTH / 2;
 
                     mesh.boardType = BoardType.VERTICAL;
                     
@@ -127,12 +128,12 @@ class Model {
                     this.faces.frontFace = mesh;
                     break;
                 case FaceType.LEFT :
-                    mesh = new THREE.Mesh(  new THREE.BoxGeometry ( 1,1,1) ,createMaterial()  ) ; 
+                    mesh = new THREE.Mesh(  new THREE.BoxGeometry ( MODEL_FACE_DEPTH,size.height,size.depth) ,createMaterial()  ) ;
 
-                    mesh.scale.set( size.depth ,size.height ,MODEL_FACE_DEPTH);
-                    mesh.rotation.y = Math.PI / 2 ;
+                    // mesh.scale.set( size.depth ,size.height ,MODEL_FACE_DEPTH);
+                    // mesh.rotation.y = Math.PI / 2 ;
 
-                    mesh.position.x = MODEL_FACE_DEPTH / 2 ;
+                    mesh.position.x = - MODEL_FACE_DEPTH / 2 ;
                     mesh.position.y = size.height / 2;
                     mesh.position.z = size.depth / 2;
 
@@ -142,12 +143,12 @@ class Model {
                     this.faces.leftFace = mesh;
                     break;
                 case FaceType.RIGHT :
-                    mesh = new THREE.Mesh(  new THREE.BoxGeometry ( 1,1,1 ) ,createMaterial() ) ; 
+                    mesh = new THREE.Mesh(  new THREE.BoxGeometry ( MODEL_FACE_DEPTH,size.height,size.depth ) ,createMaterial() ) ;
 
-                    mesh.scale.set(size.width ,size.height ,MODEL_FACE_DEPTH);
-                    mesh.rotation.y = Math.PI / 2 ;
+                    // mesh.scale.set(size.width ,size.height ,MODEL_FACE_DEPTH);
+                    // mesh.rotation.y = Math.PI / 2 ;
 
-                    mesh.position.x = size.width - MODEL_FACE_DEPTH / 2;
+                    mesh.position.x = size.width + MODEL_FACE_DEPTH / 2;
                     mesh.position.y = size.height / 2;
                     mesh.position.z = size.depth / 2;
 
@@ -160,8 +161,26 @@ class Model {
             }
             mesh.updateMatrix();
             mesh.name = "model_" + faceType;
+            mesh.isModelFace = true;
 
         }
+
+        this[createModelBoxHelper]()
+
+    }
+
+    [createModelBoxHelper](){
+
+        let size = this.size;
+
+        let meshBig = new THREE.Mesh( new THREE.BoxGeometry( size.width, size.height, size.depth));
+        meshBig.position.set(size.width /2, size.height/2, size.depth/2 )
+        meshBig.visible = false
+
+        this.facesBoxHelper = new THREE.BoxHelper( meshBig, 0x3c85ed );
+
+
+
     }
 
     joinScene (scene) {
@@ -169,6 +188,11 @@ class Model {
         _.forIn( this.faces , ( face,faceName) =>{
             scene.add (face);
         })
+    }
+
+    joinModelHelperScene (scene) {
+
+        scene.add (this.facesBoxHelper);
     }
 
     changeModel (name ,size) {

@@ -1,12 +1,45 @@
+import * as THREE from "three";
+import addBoard from "../Commands/addBoard.command.js";
+import { BOARDCONFIG } from "../Config/config"
+
+
+const planeMaterial = new THREE.MeshBasicMaterial( {color: 0xe8c582, transparent: true, opacity: 0.2} );  // 操作区域平面原始材质
 
 
 class ModelControls {
 
 	constructor(designer){
+        let _camera = designer.camera,
+            _scene = designer.scene ,
+            _renderer = designer.renderer,
+            _domElement = _renderer.domElement;
+
+        designer.modelControls = this;
+        let scope = this;
+        scope.enabled = true;
+        scope.startADDING = false;
+
+
+        let _raycaster = new THREE.Raycaster();
+        let _selected = null, _hovered = null, _movingCube = null;
+        let _selectedPlane = null;   // 鼠标选取的操作区域面，取远处的面
+        let _mouse = new THREE.Vector2();
+        let onDownPosition = new THREE.Vector2();
+        let onUpPosition = new THREE.Vector2();
+
+
+        let _highlightBoxClick, _highlightBoxHover;
+
+        let hadOrthogonal = []
+
+        let spaceEnough = true   // 标记空间容量，true为能添加，false为空间不足无法添加
 
 
 
-		//添加到渲染队列 
+
+
+
+		//添加到渲染队列
 		designer.viewport.addRenderUpdate( () =>{
 
 			if(designer.currentModel){
@@ -15,7 +48,920 @@ class ModelControls {
 
 
 		})
+
+
+
+        _domElement.addEventListener('mousemove', onMouseMove, false);
+        _domElement.addEventListener('mousedown', onMouseDown, false);
+
+        function onMouseMove(event) {
+
+            event.preventDefault();
+
+            if(!designer.currentModel) return;
+
+            let array = getMousePosition(_domElement, event.clientX, event.clientY);
+            let movePosition = new THREE.Vector2()
+            movePosition.fromArray(array);
+
+            handleHove(movePosition)
+
+
+        }
+
+        function onMouseDown(event) {
+
+
+            event.preventDefault();
+
+
+            var array = getMousePosition(_domElement, event.clientX, event.clientY);
+            onDownPosition.fromArray(array);
+
+
+            document.addEventListener('mouseup', onMouseUp, false);
+
+        }
+
+        function onMouseUp(event) {
+
+
+            var vector = transformAxis();
+            // console.log('vector',vector)
+
+
+            var array = getMousePosition(_domElement, event.clientX, event.clientY);
+            onUpPosition.fromArray(array);
+
+            console.log('startADDING',scope.startADDING)
+            if (scope.startADDING) {
+
+                if (onDownPosition.distanceTo(onUpPosition) === 0) {
+
+                    var intersects = getIntersects(onUpPosition, designer.sceneObjects);
+
+                    if (intersects.length > 0 &&  spaceEnough) {
+
+                        if(!designer.GLOBAL_CONFIG.addPreviewSet){
+                            beforeInsertCube(_selectedPlane)
+                        }
+
+                        // appendObjectsList()
+                    } else {
+                        cancelAdding()
+
+                        if(!spaceEnough){
+                            alert('空间不足')
+                        }
+                    }
+
+                    scope.startADDING = false
+                }
+
+            } else {
+                handleClick();
+            }
+
+
+            document.removeEventListener('mouseup', onMouseUp, false);
+
+        }
+
+        function handleClick() {
+
+            // 当点击过程中鼠标无移动的情况下，避免移动、旋转场景事件混乱
+            if (onDownPosition.distanceTo(onUpPosition) === 0) {
+
+
+                var intersects = getIntersects(onUpPosition, designer.sceneObjects);
+
+                if (intersects.length > 0) {
+
+                    for(let i in intersects){
+
+                        if(!intersects[i].object.isModelFace && intersects[i].object.geometry instanceof THREE.BoxGeometry){
+
+                            if(_selected != intersects[i].object){
+                                let object = intersects[i].object
+
+                                _selected = object;
+                                addHightBox(_selected,'Click')
+
+                                // 标记面板 list 选择状态
+                                // signCubeList(object)
+                            }
+
+                            break
+                        }
+                        _selected = null;
+                        deleteHelps('Click')
+                        // deleteMeshSetPlane()
+                    }
+
+
+
+
+                } else {
+
+                    _selected = null;
+                    deleteHelps('Click')
+                    // deleteMeshSetPlane()
+
+                }
+
+                // render();
+
+            }
+
+
+        }
+
+
+        function handleHove(point) {
+
+            // 还原平面初始颜色,清除 hightBox 高亮外框
+            initPlaneColor()
+            deleteHelps()
+
+            _selectedPlane = null;
+            _hovered = null;
+
+            let intersects = getIntersects(point, designer.sceneObjects)
+
+            if (intersects.length > 0) {
+
+                // 与射线第一个相交的物体是板面，即选择的是溢出区域的板面 或 拉近时选择的第一个板面
+                if (!intersects[0].object.isModelFace) {
+
+                    let object = intersects[0].object
+                    _hovered = object
+
+                    addHightBox(_hovered,'Hover')
+                    _selectedPlane = intersects[0]
+                    return
+
+                }
+
+                // 拉近时射线只穿过1个平面的情况
+                if(intersects.length == 1 && intersects[0].object.isModelFace){
+                    // 选择的 Plane 变色处理
+                    _selectedPlane = intersects[0]
+                    updatePlaneColor(_selectedPlane.object)
+                    return
+                }
+
+                if (intersects[0].object.isModelFace && intersects.length >= 2) {
+                    // 选择的是区域内的 object (暂时不考虑有板面在操作区域外的情况)
+
+
+                    // 该射线上没有区域内的 BoxGeometry，此时选择远处的 Plane
+                    if (intersects[1].object.isModelFace) {
+
+                        // 选择的 Plane 变色处理
+                        updatePlaneColor(intersects[1].object)
+
+                    } else {
+                        // 选择的是区域的板面
+
+                        let object = intersects[1].object
+                        _hovered = object
+
+                        addHightBox(_hovered,'Hover')
+
+                    }
+
+                    _selectedPlane = intersects[1]
+
+                }
+
+
+                // 预览
+                if( designer.GLOBAL_CONFIG.addPreviewSet && scope.startADDING){
+
+                    beforeInsertCube(_selectedPlane, _addingBoject)
+
+                }
+
+            } else {
+
+                _selectedPlane = null
+
+                if (scope.startADDING) {
+                    // _addingBoject.visible = false
+                }
+
+
+            }
+
+
+        }
+
+        function initPlaneColor() {
+            let modelFacesGroup = Object.values(designer.currentModel.faces)
+            for (let i = 0; i < modelFacesGroup.length; i++) {
+                modelFacesGroup[i].material = planeMaterial
+            }
+        }
+
+        function beforeInsertCube(selectedPlane) {
+
+            if(!selectedPlane) return
+
+            // console.log('face',selectedPlane.face.normal)
+            let position = new THREE.Vector3(Math.round(selectedPlane.point.x), Math.round(selectedPlane.point.y), Math.round(selectedPlane.point.z))
+
+
+            collision(designer.sceneObjects, position, selectedPlane)
+
+            if(designer.GLOBAL_CONFIG.alignSet){
+                let cubeFaceType = addobject.selfFaceType
+
+                switch (cubeFaceType){
+                    case 'XY':
+                        tobeAalign(addobject,'z' )
+                        break;
+                    case 'ZY':
+                        tobeAalign(addobject,'x' )
+                        break;
+                    case 'XZ':
+                        tobeAalign(addobject,'y' )
+                        break;
+                }
+            }
+
+        }
+
+
+        // 检测碰撞
+        function collision(collisionArray, position, selectedObject) {
+
+            hadOrthogonal = []
+            // hadOrthogonal = [selectedObject.object]
+
+            // 获取中心点坐标
+            let originPoint = position;
+
+            console.log('position2222', originPoint)
+
+            let objectFaceType = selectedObject.object.selfFaceType   // 点击时与鼠标射线相交的物体
+
+            let cubeFaceType = scope.addType
+
+            let canBuildArea = {}  // 点击处朝6个正交方向可延伸的最大坐标
+            let faceNormal = new THREE.Vector3()
+
+            let createBox = designer.GLOBAL_CONFIG.modelSize;
+            /*沿点击面的面向量方向延伸0.1个单位*/
+
+            if( selectedObject.object.isModelFace){
+                let mesh = selectedObject.object
+
+                if(mesh.position.x == createBox.x){
+                    faceNormal.set(-0.1,0,0)
+                }
+                if(mesh.position.x == 0){
+                    faceNormal.set(0.1,0,0)
+                }
+                if(mesh.position.y == createBox.y){
+                    faceNormal.set(0,-0.1,0)
+                }
+                if(mesh.position.y == 0){
+                    faceNormal.set(0,0.1,0)
+                }
+                if(mesh.position.z == createBox.z){
+                    faceNormal.set(0,0,-0.1)
+                }
+                if(mesh.position.z == 0){
+                    faceNormal.set(0,0,0.1)
+                }
+
+
+            }else{
+
+                let geoVerticesTure = {
+                    objectMinX:originPoint.x,
+                    objectMaxX:originPoint.x,
+                    objectMinY:originPoint.y,
+                    objectMaxY:originPoint.y,
+                    objectMinZ:originPoint.z,
+                    objectMaxZ:originPoint.z,
+                }
+
+                let mesh = selectedObject.object
+                let geo = mesh.geometry;
+                for(let i in geo.vertices){
+                    let globaVer = geo.vertices[i].clone().applyMatrix4(mesh.matrix);
+                    // console.log('vertices',geo.vertices[i])
+                    globaVer.x = Math.round(globaVer.x)
+                    globaVer.y = Math.round(globaVer.y)
+                    globaVer.z = Math.round(globaVer.z)
+
+                    if(globaVer.x > geoVerticesTure.objectMaxX){
+                        geoVerticesTure.objectMaxX = globaVer.x
+
+                    }
+                    if(globaVer.x < geoVerticesTure.objectMinX){
+                        geoVerticesTure.objectMinX = globaVer.x
+
+                    }
+                    if(globaVer.y > geoVerticesTure.objectMaxY){
+                        geoVerticesTure.objectMaxY = globaVer.y
+
+                    }
+                    if(globaVer.y < geoVerticesTure.objectMinY){
+                        geoVerticesTure.objectMinY = globaVer.y
+
+                    }
+                    if(globaVer.z > geoVerticesTure.objectMaxZ){
+                        geoVerticesTure.objectMaxZ = globaVer.z
+
+
+                    }
+                    if(globaVer.z < geoVerticesTure.objectMinZ){
+                        geoVerticesTure.objectMinZ = globaVer.z
+
+                    }
+
+                }
+
+
+                // 点在左侧面
+                if(originPoint.x == geoVerticesTure.objectMinX){
+                    faceNormal.set(-0.1,0,0)
+                }
+                // 点在右侧面
+                if(originPoint.x == geoVerticesTure.objectMaxX){
+                    faceNormal.set(0.1,0,0)
+                }
+                // 点在上侧面
+                if(originPoint.y == geoVerticesTure.objectMaxY){
+                    faceNormal.set(0,0.1,0)
+                }
+                // 点在下侧面
+                if(originPoint.y == geoVerticesTure.objectMinY){
+                    faceNormal.set(0,-0.1,0)
+                }
+                // 点在前侧面
+                if(originPoint.z == geoVerticesTure.objectMaxZ){
+                    faceNormal.set(0,0,0.1)
+                }
+                // 点在后侧面
+                if(originPoint.z == geoVerticesTure.objectMinZ){
+                    faceNormal.set(0,0,-0.1)
+                }
+            }
+
+
+
+
+
+
+
+
+            console.log('faceNormal',faceNormal)
+            let rayOrigin = originPoint.clone().add(faceNormal)
+
+            // 沿 X 轴正方向射线
+            canBuildArea.maxX = Math.round(rayCollision(rayOrigin,new THREE.Vector3(1,0,0)).x)
+            // 沿 X 轴负方向射线
+            canBuildArea.minX = Math.round(rayCollision(rayOrigin,new THREE.Vector3(-1,0,0) ).x)
+            // 沿 y 轴正方向射线
+            canBuildArea.maxY = Math.round(rayCollision(rayOrigin,new THREE.Vector3(0,1,0) ).y)
+            // 沿 y 轴负方向射线
+            canBuildArea.minY = Math.round(rayCollision(rayOrigin,new THREE.Vector3(0,-1,0) ).y)
+            // 沿 z 轴正方向射线
+            canBuildArea.maxZ = Math.round(rayCollision(rayOrigin,new THREE.Vector3(0,0,1) ).z)
+            // 沿 z 轴负方向射线
+            canBuildArea.minZ = Math.round(rayCollision(rayOrigin,new THREE.Vector3(0,0,-1) ).z)
+
+
+
+
+            console.log('canBuildArea:', canBuildArea)
+            console.log('hadOrthogonal:', hadOrthogonal)
+
+
+
+            let nearMeshAxes = Object.assign({},canBuildArea)
+            for(let i=0;i<collisionArray.length;i++){
+                // 不再检测之前与6条正交射线相交的物体
+                if(hadOrthogonal.indexOf(collisionArray[i]) <= -1){
+                    let mesh = collisionArray[i]
+                    let geo = mesh.geometry;
+                    geo.computeBoundingBox();
+                    let geometrySize = (geo.boundingBox.getSize()).multiply( mesh.scale );
+                    // console.log('geometrySize',geometrySize)
+                    // 获取该物体顶点坐标区间
+                    let minX = mesh.position.x - Math.round(geometrySize.x) / 2
+                    let maxX = mesh.position.x + Math.round(geometrySize.x) / 2
+                    let minY = mesh.position.y - Math.round(geometrySize.y) / 2
+                    let maxY = mesh.position.y + Math.round(geometrySize.y) / 2
+                    let minZ = mesh.position.z - Math.round(geometrySize.z) / 2
+                    let maxZ = mesh.position.z + Math.round(geometrySize.z) / 2
+
+                    switch (cubeFaceType){
+                        case 'VERCITAL_BOARD':
+                        {
+                            // 先定 Y 轴方向可延伸长度，再定X轴方向可延伸长度（背板）
+                            let canZmin = originPoint.z - BOARDCONFIG.thickness / 2
+                            let canZmax = originPoint.z + BOARDCONFIG.thickness / 2
+
+                            // 当点击处向Z负方向延伸厚度一半时，会与后侧板材重叠的情况下
+                            if ((originPoint.z - canBuildArea.minZ) >=0  && (originPoint.z - canBuildArea.minZ ) < (BOARDCONFIG.thickness / 2) ) {
+                                canZmin = canBuildArea.minZ
+                                canZmax = canBuildArea.minZ + BOARDCONFIG.thickness
+                            }
+                            // 当点击处向Z正方向延伸厚度一半时，会与前侧板材重叠的情况下
+                            if ((canBuildArea.maxZ - originPoint.z )>=0 && (canBuildArea.maxZ - originPoint.z )< (BOARDCONFIG.thickness / 2) ) {
+                                canZmin = canBuildArea.maxZ  - BOARDCONFIG.thickness
+                                canZmax = canBuildArea.maxZ
+                            }
+
+
+                            // 当该物体处于 Y 长度范围内，且在高度平面内
+                            let judgeInY = minY >= canBuildArea.maxY || maxY <= canBuildArea.minY
+                            let judgeInZ = minZ >= canZmax || maxZ<= canZmin
+
+                            if(!judgeInY && !judgeInZ){
+                                // 物体在右侧，取得最大 X
+                                if(originPoint.x < minX){
+                                    if(nearMeshAxes.maxX){
+                                        if(nearMeshAxes.maxX > minX){
+                                            nearMeshAxes.maxX = minX
+                                        }
+                                    }else{
+                                        nearMeshAxes.maxX = minX
+                                    }
+                                }else{
+                                    // 物体在左侧，取得最小 X
+
+                                    if(nearMeshAxes.minX){
+                                        if(nearMeshAxes.minX < maxX){
+                                            nearMeshAxes.minX = maxX
+                                        }
+                                    }else{
+                                        nearMeshAxes.minX = maxX
+                                    }
+
+                                }
+
+                            }
+                        }
+                            break;
+                        case 'SIDE_BOARD':
+                        {
+                            // 先定 Y 轴方向可延伸长度，再定 Z 轴方向可延伸长度（左板）
+                            let canXmin = originPoint.x - BOARDCONFIG.thickness / 2
+                            let canXmax = originPoint.x + BOARDCONFIG.thickness / 2
+
+                            // 当点击处向X负方向延伸厚度一半时，会与左侧板材重叠的情况下
+                            if ((originPoint.x - canBuildArea.minX) >=0  && (originPoint.x - canBuildArea.minX ) < (BOARDCONFIG.thickness / 2) ){
+                                canXmin = canBuildArea.minX
+                                canXmax = canBuildArea.minX + BOARDCONFIG.thickness
+                            }
+                            // 当点击处向X负方向延伸厚度一半时，会与右侧板材重叠的情况下
+                            if ((canBuildArea.maxX - originPoint.x )>=0 && (canBuildArea.maxX - originPoint.x )< (BOARDCONFIG.thickness / 2) ){
+                                canXmin = canBuildArea.maxX  - BOARDCONFIG.thickness
+                                canXmax = canBuildArea.maxX
+                            }
+
+
+                            // 当该物体处于 Y 长度范围内，且在高度平面内
+                            let judgeInY = minY >= canBuildArea.maxY || maxY <= canBuildArea.minY
+                            let judgeInX = minX >= canXmax || maxX<= canXmin
+
+                            if(!judgeInY && !judgeInX){
+                                // 物体在前侧，取得最大 Z
+                                if(originPoint.z < minZ){
+                                    if(nearMeshAxes.maxZ){
+                                        if(nearMeshAxes.maxZ > minZ){
+                                            nearMeshAxes.maxZ = minZ
+                                        }
+                                    }else{
+                                        nearMeshAxes.maxZ = minZ
+                                    }
+                                }else{
+                                    // 物体在后侧，取得最小 Z
+
+                                    if(nearMeshAxes.minZ){
+                                        if(nearMeshAxes.minZ < maxZ){
+                                            nearMeshAxes.minZ = maxZ
+                                        }
+                                    }else{
+                                        nearMeshAxes.minZ = maxZ
+                                    }
+
+                                }
+
+                            }
+                        }
+                            break;
+                        case 'HORIZONTAL_BOARD':
+                        {
+                            // 先定Z轴方向可延伸长度，再定X轴方向可延伸长度（横板）
+
+                            // 计算添加板材时最大y和最小y,当点击位置距离边界值距离不足厚度一半时，需要平移坐标到刚好平行的位置，避免重叠
+                            let canYmin = originPoint.y - BOARDCONFIG.thickness / 2
+                            let canYmax = originPoint.y + BOARDCONFIG.thickness / 2
+
+                            // 当点击处向下延伸厚度一半时，会与下侧板材重叠的情况下
+                            if ((originPoint.y - canBuildArea.minY) >=0  && (originPoint.y - canBuildArea.minY ) < (BOARDCONFIG.thickness / 2) ){
+                                canYmin = canBuildArea.minY
+                                canYmax = canBuildArea.minY + BOARDCONFIG.thickness
+                            }
+                            // 当点击处向上延伸厚度一半时，会与上侧板材重叠的情况下
+                            if ((canBuildArea.maxY - originPoint.y )>=0 && (canBuildArea.maxY - originPoint.y )< (BOARDCONFIG.thickness / 2) )  {
+                                canYmin = canBuildArea.maxY  - BOARDCONFIG.thickness
+                                canYmax = canBuildArea.maxY
+                            }
+
+
+                            // 当该物体处于 Z 长度范围内，且在高度平面内
+                            let judgeInZ = minZ >= canBuildArea.maxZ || maxZ <= canBuildArea.minZ
+                            let judgeInY = minY >= canYmax || maxY<= canYmin
+
+
+                            if(!judgeInZ && !judgeInY){
+                                // 物体在右侧，取得最大 X
+                                if(originPoint.x < minX){
+                                    if(nearMeshAxes.maxX){
+                                        if(nearMeshAxes.maxX > minX){
+                                            nearMeshAxes.maxX = minX
+                                        }
+                                    }else{
+                                        nearMeshAxes.maxX = minX
+                                    }
+                                }else{
+                                    // 物体在左侧，取得最小 X
+                                    console.log('mesh',mesh)
+                                    if(nearMeshAxes.minX){
+                                        if(nearMeshAxes.minX < maxX){
+                                            nearMeshAxes.minX = maxX
+                                        }
+                                    }else{
+                                        nearMeshAxes.minX = maxX
+                                    }
+
+                                }
+
+                            }
+                        }
+                            break;
+                    }
+
+                }
+            }
+
+
+            console.log('nearMeshAxes:', nearMeshAxes)
+
+
+
+            let newPosition = new THREE.Vector3()
+
+            switch (cubeFaceType) {
+                case 'VERCITAL_BOARD':
+
+                {
+                    let distanceX = nearMeshAxes.maxX - nearMeshAxes.minX;
+                    let distanceY = canBuildArea.maxY - canBuildArea.minY;
+
+                    if (distanceY > 0 && distanceX>0) {
+                        // 当点击处向Z负方向延伸厚度一半时，会与后侧板材重叠的情况下
+                        if ((originPoint.z - canBuildArea.minZ) >=0  && (originPoint.z - canBuildArea.minZ ) < (BOARDCONFIG.thickness / 2) ) {
+                            originPoint.z = canBuildArea.minZ + BOARDCONFIG.thickness / 2
+                        }
+                        // 当点击处向Z正方向延伸厚度一半时，会与前侧板材重叠的情况下
+                        if ((canBuildArea.maxZ - originPoint.z )>=0 && (canBuildArea.maxZ - originPoint.z )< (BOARDCONFIG.thickness / 2) ) {
+                            originPoint.z = canBuildArea.maxZ - BOARDCONFIG.thickness / 2
+                        }
+
+                        newPosition.set(nearMeshAxes.maxX - distanceX / 2, canBuildArea.maxY - distanceY / 2, originPoint.z)
+                        console.log('XY背板:', newPosition)
+
+                        if(!designer.GLOBAL_CONFIG.addPreviewSet){
+                            let size = {
+                                length: distanceX,
+                                width: distanceY ,
+                                position: newPosition
+                            }
+                            let options = Object.assign({}, scope.boardOptions, size)
+                            designer.execCmd('ADD_BOARD',options)
+                        }else{
+                            moveingObj.scale.set(distanceX, distanceY, BOARDCONFIG.thickness)
+                            // moveingObj.scale.set(distanceX, BOARDCONFIG.thickness, distanceY)
+                            // moveingObj.rotateX( - Math.PI / 2 )
+                            moveingObj.position.copy(newPosition)
+                            moveingObj.visible = true
+                            _selected = moveingObj
+                        }
+
+                        spaceEnough = true
+
+                    }else{
+                        console.log('空间不足XY')
+                        moveingObj.visible = false
+                        spaceEnough = false
+                    }
+                }
+                    break;
+                case 'SIDE_BOARD':
+                {
+                    let distanceY = canBuildArea.maxY - canBuildArea.minY;
+                    let distanceZ = nearMeshAxes.maxZ - nearMeshAxes.minZ;
+                    // 空间长度（X）大于板面厚度时
+                    if (distanceY > 0 && distanceZ > 0) {
+
+                        // 当点击处向X负方向延伸厚度一半时，会与左侧板材重叠的情况下
+                        if ((originPoint.x - canBuildArea.minX) >=0  && (originPoint.x - canBuildArea.minX ) < (BOARDCONFIG.thickness / 2) ){
+                            originPoint.x = canBuildArea.minX + BOARDCONFIG.thickness / 2
+                        }
+                        // 当点击处向X负方向延伸厚度一半时，会与右侧板材重叠的情况下
+                        if ((canBuildArea.maxX - originPoint.x )>=0 && (canBuildArea.maxX - originPoint.x )< (BOARDCONFIG.thickness / 2) ){
+                            originPoint.x = canBuildArea.maxX - BOARDCONFIG.thickness / 2
+                        }
+
+                        newPosition.set(originPoint.x, canBuildArea.maxY - distanceY / 2, nearMeshAxes.maxZ - distanceZ / 2)
+                        console.log('ZY:', newPosition)
+                        // moveingObj.scale.set(distanceY, BOARDCONFIG.thickness, distanceZ)
+                        // moveingObj.rotateZ( - Math.PI / 2 )
+                        if(!designer.GLOBAL_CONFIG.addPreviewSet){
+                            let size = {
+                                length: distanceZ,
+                                width: distanceY ,
+                                position: newPosition
+                            }
+                            let options = Object.assign({}, scope.boardOptions, size)
+                            designer.execCmd('ADD_BOARD',options)
+                        }else{
+                            moveingObj.scale.set(BOARDCONFIG.thickness, distanceY, distanceZ)
+                            moveingObj.position.copy(newPosition)
+
+                            moveingObj.visible = true
+                            _selected = moveingObj
+                        }
+
+                        spaceEnough = true
+
+                    }else{
+                        console.log('空间不足ZY')
+                        moveingObj.visible = false
+                        spaceEnough = false
+                    }
+                }
+                    break;
+                case 'HORIZONTAL_BOARD':
+
+                {
+                    let distanceX = nearMeshAxes.maxX - nearMeshAxes.minX;
+                    let distanceZ = canBuildArea.maxZ - canBuildArea.minZ;
+
+                    if (distanceZ > 0 && distanceX > 0) {
+
+                        // 当点击处向下延伸厚度一半时，会与下侧板材重叠的情况下
+                        if ((originPoint.y - canBuildArea.minY) >=0  && (originPoint.y - canBuildArea.minY ) < (BOARDCONFIG.thickness / 2) ){
+                            originPoint.y = canBuildArea.minY + BOARDCONFIG.thickness / 2
+                        }
+                        // 当点击处向上延伸厚度一半时，会与上侧板材重叠的情况下
+                        if ((canBuildArea.maxY - originPoint.y )>=0 && (canBuildArea.maxY - originPoint.y )< (BOARDCONFIG.thickness / 2) )  {
+                            originPoint.y = canBuildArea.maxY - BOARDCONFIG.thickness / 2
+                        }
+
+                        newPosition.set(nearMeshAxes.maxX - distanceX / 2, originPoint.y, canBuildArea.maxZ - distanceZ / 2)
+
+                        console.log('newPosition:', newPosition)
+
+                        if(!designer.GLOBAL_CONFIG.addPreviewSet){
+                            // this.makeUpBoard(new THREE.Vector3(distanceX, BOARDCONFIG.thickness, distanceZ), newPosition)
+                            let size = {
+                                length: distanceX,
+                                width: distanceZ ,
+                                position: newPosition
+                            }
+                            let options = Object.assign({}, scope.boardOptions, size)
+
+                            designer.execCmd('ADD_BOARD',options)
+                        }else{
+                            moveingObj.scale.set(distanceX, BOARDCONFIG.thickness, distanceZ)
+                            moveingObj.position.copy(newPosition)
+                            moveingObj.visible = true
+                            _selected = moveingObj
+                        }
+
+
+                        spaceEnough = true
+
+                    }else{
+                        console.log('空间不足XZ')
+                        moveingObj.visible = false
+                        spaceEnough = false
+                    }
+                }
+                    break;
+            }
+
+
+
+
+
+        }
+
+        /*
+         * 发射线
+         * originPoint：射线起点
+         * Vector： 方向向量
+         * */
+        function rayCollision(originPoint,Vector ) {
+
+            let ray = new THREE.Raycaster(originPoint.clone(), Vector);
+            let collisionResult = ray.intersectObjects(designer.sceneObjects);
+            // console.log('collisionResult',collisionResult)
+            if (collisionResult.length > 0) {
+                hadOrthogonal.push(collisionResult[0].object)
+
+                // 绘制射线，用于调试
+                // let _lineSegmentsPath = new THREE.Geometry();
+                // _lineSegmentsPath.vertices = [originPoint.clone(), collisionResult[0].point];
+                // let _lineSegments = new THREE.LineSegments( _lineSegmentsPath, new THREE.LineBasicMaterial({
+                //     color: 0x0000ff
+                // }) );
+                // _scene.add( _lineSegments );
+
+                return collisionResult[0].point
+            }
+            return originPoint.clone()
+
+        }
+
+        // 勾选对齐时 position 变化
+        function tobeAalign(_object,type ) {
+
+            for(let i=6;i<designer.sceneObjects.length;i++){
+                let object = designer.sceneObjects[i]
+                if(object.selfFaceType == _object.selfFaceType && Math.abs(_object.position[type] - object.position[type])<=designer.GLOBAL_CONFIG.nearDistance){
+
+                    let geo = object.geometry;
+                    geo.computeBoundingBox();
+                    let geometrySize = (geo.boundingBox.getSize()).multiply( object.scale );
+                    // 获取该物体顶点坐标区间
+                    let minX = object.position.x - Math.round(geometrySize.x) / 2
+                    let maxX = object.position.x + Math.round(geometrySize.x) / 2
+                    let minY = object.position.y - Math.round(geometrySize.y) / 2
+                    let maxY = object.position.y + Math.round(geometrySize.y) / 2
+                    let minZ = object.position.z - Math.round(geometrySize.z) / 2
+                    let maxZ = object.position.z + Math.round(geometrySize.z) / 2
+
+
+                    if(type == 'x'){
+                        if((_object.position.y <minY || _object.position.y > maxY)||(_object.position.z <minZ || _object.position.z > maxZ)){
+                            _object.position[type] = object.position[type]
+                        }
+                    }
+                    if(type == 'y'){
+                        if((_object.position.x <minX || _object.position.x > maxX)||(_object.position.z <minZ || _object.position.z > maxZ)){
+                            _object.position[type] = object.position[type]
+                        }
+                    }
+                    if(type == 'z'){
+                        if((_object.position.x <minX || _object.position.x > maxX)||(_object.position.y <minY || _object.position.y > maxY)){
+                            _object.position[type] = object.position[type]
+                        }
+                    }
+
+
+
+
+                }
+            }
+
+        }
+
+
+        function addHightBox(object, type) {
+
+            if(type == 'Hover'){
+
+                if(_highlightBoxHover){
+                    updateHighlightBox(_highlightBoxHover,object )
+                }else{
+                    let bbox = new THREE.BoxHelper(object, 0x71e321);
+                    bbox.name = 'hightBoxHover'
+                    _scene.add(bbox);
+                    _highlightBoxHover = bbox
+                }
+            }
+
+            if(type == 'Click'){
+                if(_highlightBoxClick){
+                    updateHighlightBox(_highlightBoxClick,object )
+                }else{
+                    let bbox = new THREE.BoxHelper(object, 0x71e321);
+                    bbox.name = 'hightBoxClick'
+                    _scene.add(bbox);
+                    _highlightBoxClick = bbox
+                }
+
+            }
+        }
+
+        // 传参的时候做删除，无参做隐藏
+        function deleteHelps(type) {
+
+            if(type){
+                _scene.remove(_scene.getObjectByName(`hightBox${type}`));
+
+                switch (type){
+                    case 'Click':
+                        _highlightBoxClick = null
+                        break;
+                }
+            }
+
+            if(_highlightBoxHover){
+                _highlightBoxHover.visible = false
+            }
+
+        }
+
+        function updateHighlightBox(_box, _mesh) {
+
+            _box.setFromObject(_mesh); // 更新盒辅助
+            _box.visible = true;
+
+        }
+
+        function getSelected() {
+            return _selected
+        }
+
+        function setSelected(mesh) {
+            _selected = mesh
+        }
+
+        // 选择的 Plane 变色处理
+        function updatePlaneColor(mesh) {
+
+            let materialUpdate = mesh.material.clone();
+            materialUpdate.setValues({color: 0x2f9b03})
+            mesh.material = materialUpdate
+        }
+
+        function transformAxis() {
+            var rect = _domElement.getBoundingClientRect();  // 返回元素的大小及其相对于视口的位置
+
+            _mouse.x = ( (event.clientX - rect.left) / rect.width ) * 2 - 1;
+            _mouse.y = - ( (event.clientY - rect.top) / rect.height ) * 2 + 1;
+
+            // _mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+            // _mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+            var vector = new THREE.Vector3( _mouse.x , _mouse.y, 0.5);
+            vector = vector.unproject(_camera);
+            return vector;
+        }
+
+        // 转换坐标
+        function getMousePosition( dom, x, y ) {
+
+            let rect = dom.getBoundingClientRect();
+            return [ ( x - rect.left ) / rect.width, ( y - rect.top ) / rect.height ];
+
+        }
+
+
+        // 获取射线上的对象
+        function getIntersects( point, objects ) {
+
+            _mouse.set( ( point.x * 2 ) - 1, - ( point.y * 2 ) + 1 );
+
+            _raycaster.setFromCamera( _mouse, _camera );
+
+            return _raycaster.intersectObjects( objects );
+
+        }
+
 	}
+
+
+    beginInsert(options){
+	    let self = this;
+        self.startADDING = true;
+
+        self.boardOptions = options;
+        self.addType = options.type;
+
+
+
+    }
+
+    makeUpBoard(){
+        let board = addBoard( designer.scene ,options);
+
+        cmds.ADD_BOARD.dispatch(boardData);
+    }
+
+
+
 
 }
 

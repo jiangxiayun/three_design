@@ -1,5 +1,6 @@
 
 import * as THREE from "three";
+import {TEXTURECONFIG} from "../Config/config"
 
 const initSysHelpers = Symbol('initSysHelpers');
 
@@ -20,18 +21,21 @@ class Viewport {
         let { width , height} = uiSize;
               
               
-        let renderer = new THREE.WebGLRenderer();
+        let renderer = new THREE.WebGLRenderer({antialias: true});
  
         designer.renderer = this.renderer = renderer;
         designer.viewport = this;
-        
+
+        // 找到GPU最大有效各向异性值
+        TEXTURECONFIG.maxAnisotropy = renderer.getMaxAnisotropy();
+
         
 
         renderer.setClearColor(new THREE.Color( 0xffffff));
         renderer.setSize( width, height );
 
-        renderer.shadowMap.enable = true;
-        renderer.shadowMapEnabled = THREE.PCFSoftShadowMap;
+        // renderer.shadowMap.enable = true;
+        // renderer.shadowMapEnabled = THREE.PCFSoftShadowMap;
 
         // 添加helper
         this[initSysHelpers]( scene ); 
@@ -51,6 +55,9 @@ class Viewport {
 
         document.body.appendChild( renderer.domElement );
         render();
+
+
+
 
     }
 
@@ -77,6 +84,8 @@ class Viewport {
         let axsi = new THREE.AxisHelper(2500);
         scene.add(axsi);
     }
+
+
 }
 
 export default Viewport;

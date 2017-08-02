@@ -3,7 +3,7 @@ import  VerticalBoard from "../Objects/VerticalBoard";
 import  SideBoard from "../Objects/SideBoard";
 
 
-const addBoard = (scene ,options) =>{
+const addBoard = (designer ,options) =>{
 
 	let board = null;
 
@@ -18,7 +18,8 @@ const addBoard = (scene ,options) =>{
 			board = new SideBoard(options);
 			break;
 	}
-	board.joinScene(scene);
+    board.selfFaceType = options.type;
+	board.joinScene(designer.scene);
 	return board;
 }
 

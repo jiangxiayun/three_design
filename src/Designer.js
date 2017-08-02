@@ -32,7 +32,9 @@ class Designer {
 
         this.boards = [];
         // this.currentFaces = [];
- 
+
+        this.sceneObjects = [];  // 存放所有需要检测的 boards 和 model-faces
+
 
         // 历史记录
         this.history = new History();
@@ -43,6 +45,13 @@ class Designer {
 
         this.optionMode = 'input';
 
+
+        this.GLOBAL_CONFIG = {
+            maxAnisotropy: null,   // 各向异性值
+            nearDistance: 50,  // 邻近距离设定(对齐吸附)
+            alignSet: false, // 对齐
+            addPreviewSet: false // 预览
+        }
 
         this.cmds = {
 
@@ -83,7 +92,7 @@ class Designer {
         // 推入历史栈
         console.log(this.scene)
         if(cmd.indexOf('GET') == -1){
-            
+
             this.history.pushState({
                 cmdName :cmd,
                 options : options,
