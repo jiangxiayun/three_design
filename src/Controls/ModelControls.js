@@ -260,23 +260,24 @@ class ModelControls {
 
             let position = new THREE.Vector3(Math.round(selectedPlane.point.x), Math.round(selectedPlane.point.y), Math.round(selectedPlane.point.z))
 
-            collision(designer.sceneObjects, position, selectedPlane)
 
             if(designer.GLOBAL_CONFIG.alignSet){
 
-                let cubeFaceType = addobject.selfFaceType
-                switch (cubeFaceType){
-                    case 'XY':
-                        tobeAalign(addobject,'z' )
+                switch (scope.addType){
+                    case 'VERCITAL_BOARD':
+                        tobeAalign(position,'z' )
                         break;
-                    case 'ZY':
-                        tobeAalign(addobject,'x' )
+                    case 'SIDE_BOARD':
+                        tobeAalign(position,'x' )
                         break;
-                    case 'XZ':
-                        tobeAalign(addobject,'y' )
+                    case 'HORIZONTAL_BOARD':
+                        tobeAalign(position,'y' )
                         break;
                 }
             }
+
+            collision(designer.sceneObjects, position, selectedPlane)
+
 
         }
 
@@ -294,7 +295,7 @@ class ModelControls {
             let canBuildArea = {};  // 点击处朝6个正交方向可延伸的最大坐标
             let faceNormal = new THREE.Vector3();
             let createBox = designer.GLOBAL_CONFIG.modelSize;
-            console.log('模型尺寸：',createBox)
+            // console.log('模型尺寸：',createBox)
 
             /*沿点击面的面向量方向延伸0.1个单位*/
             if( selectedObject.object.isModelFace){
@@ -352,7 +353,7 @@ class ModelControls {
                 }
             }
 
-            console.log('faceNormal面向量',faceNormal)
+            // console.log('faceNormal面向量',faceNormal)
             let rayOrigin = originPoint.clone().add(faceNormal)
 
             // 沿 X 轴正方向射线
@@ -521,7 +522,7 @@ class ModelControls {
                                 }else{
                                     // 物体在左侧，取得最小 X
                                     if(nearMeshAxes.minX){
-                                        console.log(mesh)
+
                                         if(nearMeshAxes.minX < geoVerticesTure.objectMaxX){
                                             nearMeshAxes.minX = geoVerticesTure.objectMaxX
                                         }
@@ -585,7 +586,9 @@ class ModelControls {
 
                     }else{
                         console.log('空间不足XY');
-                        scope.cubeForPreview.visible = false;
+                        if(scope.cubeForPreview){
+                            scope.cubeForPreview.visible = false;
+                        }
                         spaceEnough = false;
                     }
                 }
@@ -630,7 +633,10 @@ class ModelControls {
 
                     }else{
                         console.log('空间不足ZY');
-                        scope.cubeForPreview.visible = false;
+                        if(scope.cubeForPreview){
+                            scope.cubeForPreview.visible = false;
+                        }
+
                         spaceEnough = false;
                     }
                 }
@@ -660,6 +666,7 @@ class ModelControls {
 
                         if(designer.GLOBAL_CONFIG.addPreviewSet){
 
+                            console.log('cubeForPreview',scope.cubeForPreview)
                             scope.cubeForPreview.scale.set(distanceX, BOARDCONFIG.thickness, distanceZ);
                             scope.cubeForPreview.position.copy(addCubePosition);
                             scope.cubeForPreview.visible = true;
@@ -670,7 +677,9 @@ class ModelControls {
 
                     }else{
                         console.log('空间不足XZ');
-                        scope.cubeForPreview.visible = false;
+                        if(scope.cubeForPreview){
+                            scope.cubeForPreview.visible = false;
+                        }
                         spaceEnough = false;
                     }
                 }
@@ -770,43 +779,33 @@ class ModelControls {
         }
 
         // 勾选对齐时 position 变化
-        function tobeAalign(_object,type ) {
+        function tobeAalign(position,type ) {
 
             for(let i=6;i<designer.sceneObjects.length;i++){
                 let object = designer.sceneObjects[i]
-                if(object.selfFaceType == _object.selfFaceType && Math.abs(_object.position[type] - object.position[type])<=designer.GLOBAL_CONFIG.nearDistance){
+                if(object.selfFaceType == scope.addType && Math.abs(position[type] - object.position[type])<=designer.GLOBAL_CONFIG.nearDistance){
 
-                    let geo = object.geometry;
-                    geo.computeBoundingBox();
-                    let geometrySize = (geo.boundingBox.getSize()).multiply( object.scale );
-                    // 获取该物体顶点坐标区间
-                    let minX = object.position.x - Math.round(geometrySize.x) / 2
-                    let maxX = object.position.x + Math.round(geometrySize.x) / 2
-                    let minY = object.position.y - Math.round(geometrySize.y) / 2
-                    let maxY = object.position.y + Math.round(geometrySize.y) / 2
-                    let minZ = object.position.z - Math.round(geometrySize.z) / 2
-                    let maxZ = object.position.z + Math.round(geometrySize.z) / 2
+                    let geoVerticesTure = getGeometrySizeOptions(object);
 
 
                     if(type == 'x'){
-                        if((_object.position.y <minY || _object.position.y > maxY)||(_object.position.z <minZ || _object.position.z > maxZ)){
-                            _object.position[type] = object.position[type]
+                        if((position.y < geoVerticesTure.objectMinY || position.y > geoVerticesTure.objectMaxY)||
+                            (position.z < geoVerticesTure.objectMinZ || position.z > geoVerticesTure.objectMaxZ)){
+                            position[type] = object.position[type]
                         }
                     }
                     if(type == 'y'){
-                        if((_object.position.x <minX || _object.position.x > maxX)||(_object.position.z <minZ || _object.position.z > maxZ)){
-                            _object.position[type] = object.position[type]
+                        if((position.x < geoVerticesTure.objectMinX || position.x > geoVerticesTure.objectMaxY)||
+                            (position.z < geoVerticesTure.objectMinZ || position.z > geoVerticesTure.objectMaxZ)){
+                            position[type] = object.position[type]
                         }
                     }
                     if(type == 'z'){
-                        if((_object.position.x <minX || _object.position.x > maxX)||(_object.position.y <minY || _object.position.y > maxY)){
-                            _object.position[type] = object.position[type]
+                        if((position.x < geoVerticesTure.objectMinX || position.x > geoVerticesTure.objectMaxY)||
+                            (position.y < geoVerticesTure.objectMinY || position.y > geoVerticesTure.objectMaxY)){
+                           position[type] = object.position[type]
                         }
                     }
-
-
-
-
                 }
             }
 
@@ -924,6 +923,7 @@ class ModelControls {
 
             self.cubeForPreview = new THREE.Mesh(new THREE.BoxGeometry(1, 1,1), new THREE.MeshBasicMaterial({ map: texture }))
             self.cubeForPreview.visible = false;
+            designer.scene.add(self.cubeForPreview)
         }
     }
 
