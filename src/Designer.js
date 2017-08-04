@@ -71,7 +71,14 @@ class Designer {
 
 
             LOAD_OBJECT : new Signal(),
-            EXPORT_OBJECT : new Signal()
+            EXPORT_OBJECT : new Signal(),
+
+
+            READY_INSERT_BOARD : new Signal(),
+
+
+            SHOW_BOARD_OPTIONS : new Signal(),
+            HIDE_BOARD_OPTIONS : new Signal()
 
         }
     }

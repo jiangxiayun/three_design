@@ -102,8 +102,8 @@ class LibarySidebar extends UIComponent {
                     'id':parseInt($(this).attr('boardId'))
                 }
             );
-            designer.modelControls.beginInsert(designer, boardData)
-            // designer.execCmd('ADD_BOARD',boardData);
+            // designer.modelControls.beginInsert(designer, boardData)
+            designer.execCmd('READY_INSERT_BOARD',boardData);
 
         })
 

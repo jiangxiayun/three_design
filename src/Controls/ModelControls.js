@@ -44,6 +44,25 @@ class ModelControls {
 
 		})
 
+		// 添加准备插入板材命令
+		designer.cmds.READY_INSERT_BOARD.add ( (options) =>{
+			scope.startADDING = true;
+
+			scope.boardOptions = options;
+			scope.addType = options.type;
+
+			if(!scope.cubeForPreview && designer.GLOBAL_CONFIG.addPreviewSet){
+
+				let texture = TextureLoader.load( options.img );
+				texture.anisotropy = TEXTURECONFIG.maxAnisotropy;
+				texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+
+				scope.cubeForPreview = new THREE.Mesh(new THREE.BoxGeometry(1, 1,1), new THREE.MeshBasicMaterial({ map: texture }))
+				scope.cubeForPreview.visible = false;
+				designer.scene.add(scope.cubeForPreview)
+			}
+		})
+
 
 
         _domElement.addEventListener('mousemove', onMouseMove, false);
@@ -908,24 +927,6 @@ class ModelControls {
 	}
 
 
-    beginInsert(designer, options){
-	    let self = this;
-        self.startADDING = true;
-
-        self.boardOptions = options;
-        self.addType = options.type;
-
-        if(!self.cubeForPreview && designer.GLOBAL_CONFIG.addPreviewSet){
-
-            let texture = TextureLoader.load( options.img );
-            texture.anisotropy = TEXTURECONFIG.maxAnisotropy;
-            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-
-            self.cubeForPreview = new THREE.Mesh(new THREE.BoxGeometry(1, 1,1), new THREE.MeshBasicMaterial({ map: texture }))
-            self.cubeForPreview.visible = false;
-            designer.scene.add(self.cubeForPreview)
-        }
-    }
 
     makeUpBoard(){
         let board = addBoard( designer.scene ,options);
