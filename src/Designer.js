@@ -40,18 +40,20 @@ class Designer {
         this.history = new History();
 
 
+
         this.selectedBoard = null;
         this.currentModel = null;
+        this.currentRuler = null;
         this.currentIndex = 0;
 
         this.optionMode = 'input';
 
 
         this.GLOBAL_CONFIG = {
-            maxAnisotropy: null,   // 各向异性值
             nearDistance: 50,  // 邻近距离设定(对齐吸附)
             alignSet: false, // 对齐
-            addPreviewSet: false // 预览
+            addPreviewSet: false, // 预览
+            showRuler: false, // 标尺
         }
 
         this.cmds = {
@@ -68,6 +70,12 @@ class Designer {
             GET_CURRENT_MODEL : new Signal(),
             GET_SELECTED_BOARD : new Signal(),
             GET_ALL_BOARD : new Signal(),
+
+            GET_CURRENT_RULER : new Signal(),
+
+            HRLPER_ADD_RULER:  new Signal(),
+            HRLPER_CHANGE_RULER:  new Signal(),
+            HRLPER_HIDE_RULER:  new Signal(),
 
 
             LOAD_OBJECT : new Signal(),

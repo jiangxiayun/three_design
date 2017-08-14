@@ -1,10 +1,11 @@
 import * as THREE from "three";
-import addBoard from "../Commands/addBoard.command.js";
 import { BOARDCONFIG, TEXTURECONFIG, MODELCONFIG } from "../Config/config"
 
 
 const planeMaterial = new THREE.MeshBasicMaterial( {color: 0xe8c582, transparent: true, opacity: 0.2} );  // 操作区域平面原始材质
 const TextureLoader = new THREE.TextureLoader();
+
+
 
 class ModelControls {
 
@@ -19,6 +20,8 @@ class ModelControls {
         scope.enabled = false;
         scope.startADDING = false;
         scope.cubeForPreview = null;
+
+
 
         let _raycaster = new THREE.Raycaster();
         let _hovered = null, _movingCube = null;
@@ -163,6 +166,28 @@ class ModelControls {
 
                                 designer.selectedBoard = object;
                                 addHightBox(designer.selectedBoard,'Click');
+
+                                // 显示标尺
+                                if(designer.GLOBAL_CONFIG.showRuler){
+
+                                    let geoVerticesTure = getGeometrySizeOptions(object)
+
+
+                                    // 判断当前是否有模型，没有则添加，有则转换
+                                    designer.execCmd('GET_CURRENT_RULER', currentRuler =>{
+                                        if(currentRuler){
+                                            designer.execCmd('HRLPER_CHANGE_RULER',geoVerticesTure);
+                                        }else{
+                                            designer.execCmd('HRLPER_ADD_RULER',geoVerticesTure);
+                                        }
+
+                                    });
+
+
+
+
+
+                                }
 
                                 // 标记面板 list 选择状态
                                 // signCubeList(object)
@@ -344,6 +369,7 @@ class ModelControls {
 
                 let mesh = selectedObject.object
                 let geoVerticesTure = getGeometrySizeOptions(mesh)
+                console.log('geoVerticesTure',geoVerticesTure)
 
 
                 // 点在左侧面
@@ -372,7 +398,7 @@ class ModelControls {
                 }
             }
 
-            // console.log('faceNormal面向量',faceNormal)
+            console.log('faceNormal面向量',faceNormal)
             let rayOrigin = originPoint.clone().add(faceNormal)
 
             // 沿 X 轴正方向射线
@@ -838,7 +864,7 @@ class ModelControls {
                 if(_highlightBoxHover){
                     updateHighlightBox(_highlightBoxHover,object )
                 }else{
-                    let bbox = new THREE.BoxHelper(object, 0x71e321);
+                    let bbox = new THREE.BoxHelper(object, 0xffffff);
                     bbox.name = 'hightBoxHover'
                     _scene.add(bbox);
                     _highlightBoxHover = bbox
@@ -849,7 +875,7 @@ class ModelControls {
                 if(_highlightBoxClick){
                     updateHighlightBox(_highlightBoxClick,object )
                 }else{
-                    let bbox = new THREE.BoxHelper(object, 0x71e321);
+                    let bbox = new THREE.BoxHelper(object, 0xffffff);
                     bbox.name = 'hightBoxClick'
                     _scene.add(bbox);
                     _highlightBoxClick = bbox
@@ -925,15 +951,6 @@ class ModelControls {
         }
 
 	}
-
-
-
-    makeUpBoard(){
-        let board = addBoard( designer.scene ,options);
-
-        cmds.ADD_BOARD.dispatch(boardData);
-    }
-
 
 
 

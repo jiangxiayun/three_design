@@ -8,6 +8,9 @@ import setBoardPosition from "./setBoardPosition.command.js";
 import setBoardRotation from "./setBoardRotation.command.js";
 import setBoardSize from "./setBoardSize.command.js";
 import setBoardTexture from "./setBoardTexture.command.js";
+import addRulerHelper from "./addRuler.command.js";
+import changeRulerHelper from "./changeRuler.command.js";
+import hideRulerHelper from "./hideRuler.command.js";
 
 
 import _ from "lodash";
@@ -15,6 +18,7 @@ import _ from "lodash";
 
 const addGetCommand = Symbol('addGetCommand');
 const addOptCommand = Symbol('addOptCommand');
+const addHelperCommand = Symbol('addHelperCommand');
 /**
  * 为designer的信号绑定命令
  * 
@@ -27,7 +31,9 @@ class Commands {
 		this[addGetCommand](designer);
 
 		this[addOptCommand](designer);
-	
+
+		this[addHelperCommand](designer);
+
 
 
 	}
@@ -60,6 +66,15 @@ class Commands {
 			}
 			
 		});
+
+        // 获取当前标尺
+        designer.cmds.GET_CURRENT_RULER.add( (callback) =>{
+
+            if(typeof callback == 'function'){
+                callback(designer.currentRuler);
+            }
+
+        });
 	}
 	
 	[addOptCommand](designer){
@@ -79,7 +94,7 @@ class Commands {
             }
 
             designer.sceneObjects = [...(Object.values(model.faces))]
-            designer.modelControls.enabled = true;   //激活 modelControls
+            designer.modelControls.enabled = true;   // 激活 modelControls
 
 		})
 
@@ -144,6 +159,34 @@ class Commands {
         designer.cmds.SELECT_BOARD.add( (board) =>{
         	designer.selectedBoard = board;
         })
+	}
+
+    [addHelperCommand](designer){
+
+        // 添加标尺
+        designer.cmds.HRLPER_ADD_RULER.add( (options) =>{
+
+            let ruler = addRulerHelper( designer ,options);
+            designer.currentRuler = ruler;
+            designer.rulerOPtions = options
+
+        })
+
+        // 修改标尺
+        designer.cmds.HRLPER_CHANGE_RULER.add( (options) =>{
+
+            changeRulerHelper( designer.currentRuler , options);
+            designer.rulerOPtions = options
+        })
+
+        // 隐藏标尺
+        designer.cmds.HRLPER_HIDE_RULER.add( () =>{
+
+            hideRulerHelper( designer.currentRuler );
+
+        })
+
+
 	}
 }
 

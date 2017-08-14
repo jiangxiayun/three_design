@@ -1,6 +1,7 @@
 
 import * as THREE from "three";
 import {TEXTURECONFIG} from "../Config/config"
+import  RulerSet from "../UI/Ruler.Set";
 
 const initSysHelpers = Symbol('initSysHelpers');
 
@@ -47,6 +48,7 @@ class Viewport {
                     update();
                 });
             }
+
             
             requestAnimationFrame(render);
             renderer.render( scene , camera );
@@ -84,6 +86,8 @@ class Viewport {
         let axsi = new THREE.AxisHelper(2500);
         scene.add(axsi);
     }
+
+
 
 
 }

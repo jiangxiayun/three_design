@@ -39,3 +39,31 @@ canvas {
 .bottom-menu .ui.checkbox{
   margin-right: 10px;
 }
+
+.rulerNum{
+  position: absolute;
+  text-align: center;
+}
+.rulerNum span{
+  display: inline-block;
+  font-size: 13px;
+  text-shadow: 1px 1px 0 #ffffff,-1px 1px 0 #ffffff,1px -1px 0 #ffffff,-1px -1px 0 #ffffff;
+}
+.rulerNum input{
+  display: none;
+  /*text-align: center;*/
+}
+.rulerNum:hover input{
+  display: inline-block;
+  width: 100px;
+  border: 1px solid #171e25;
+}
+.rulerNum:hover span{
+  display: none;
+}
+#ruler_SX,#ruler_SY,#ruler_SZ{
+  color: #dc1010;
+}
+#ruler_PX,#ruler_PY,#ruler_PZ{
+  color: #71e321;
+}

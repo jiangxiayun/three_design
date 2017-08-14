@@ -21,8 +21,15 @@ class BottomMenu extends UIComponent {
                     <input type="checkbox" name="addPreviewSet" id="addPreviewSet">
                     <label>添加面板预览</label>
                 </div>
+                <div class="ui checkbox">
+                    <input type="checkbox" name="showRuler" id="showRuler">
+                    <label>标尺</label>
+                </div>
             </div>
         `);
+
+        // 渲染dom
+        this.renderDOM();
 
         // 绑定命令
         this.bindCommands(designer,designer.cmds);
@@ -52,6 +59,19 @@ class BottomMenu extends UIComponent {
         $("body").on("change",'.bottom-menu #addPreviewSet',function(e) {
 
             designer.GLOBAL_CONFIG.addPreviewSet = this.checked
+
+        })
+
+        //标尺点击事件
+        $("body").on("change",'.bottom-menu #showRuler',function(e) {
+
+            designer.GLOBAL_CONFIG.showRuler = this.checked
+            if(!this.checked){
+
+                designer.execCmd('HRLPER_HIDE_RULER');
+
+            }
+
 
         })
 

@@ -3,7 +3,6 @@ import * as THREE from "three";
 import _ from "lodash";
 import { MODELCONFIG } from "../Config/config"
 
-// const MODEL_FACE_DEPTH = 0.2;
 
 export const FaceType = {
     BOTTOM : 'BOTTOM',
