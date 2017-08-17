@@ -86,7 +86,12 @@ class Designer {
 
 
             SHOW_BOARD_OPTIONS : new Signal(),
-            HIDE_BOARD_OPTIONS : new Signal()
+            HIDE_BOARD_OPTIONS : new Signal(),
+
+
+            SCENE_MENU : new Signal(),
+            BOARD_MENU : new Signal(),
+            REMOVE_SCENE_MENU : new Signal()
 
         }
     }

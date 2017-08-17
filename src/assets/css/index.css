@@ -67,3 +67,7 @@ canvas {
 #ruler_PX,#ruler_PY,#ruler_PZ{
   color: #71e321;
 }
+
+#scene_menu{
+  position: absolute;
+}

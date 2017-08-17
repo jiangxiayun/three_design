@@ -11,6 +11,7 @@ import setBoardTexture from "./setBoardTexture.command.js";
 import addRulerHelper from "./addRuler.command.js";
 import changeRulerHelper from "./changeRuler.command.js";
 import hideRulerHelper from "./hideRuler.command.js";
+import { addScenePopupMenu } from "./setSceneMenu.command.js";
 
 
 import _ from "lodash";
@@ -158,6 +159,20 @@ class Commands {
 		// 选择板材
         designer.cmds.SELECT_BOARD.add( (board) =>{
         	designer.selectedBoard = board;
+        })
+
+		// 右键全局场景弹窗
+        designer.cmds.SCENE_MENU.add((position) => {
+            designer.popup = addScenePopupMenu(designer, position, 'global')
+
+		})
+		// 右键板材设置弹窗
+        designer.cmds.BOARD_MENU.add((position) => {
+            designer.popup = addScenePopupMenu(designer, position, 'board')
+        })
+		// 移除场景弹窗菜单
+        designer.cmds.REMOVE_SCENE_MENU.add(() => {
+            designer.popup.clearDom()
         })
 	}
 

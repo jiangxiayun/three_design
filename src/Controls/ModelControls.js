@@ -30,6 +30,7 @@ class ModelControls {
         let _mouse = new THREE.Vector2();
         let onDownPosition = new THREE.Vector2();
         let onUpPosition = new THREE.Vector2();
+        let forDomPosition = new THREE.Vector2();
 
         let hadOrthogonal = [];
         let spaceEnough = true;  // 标记空间容量，true为能添加，false为空间不足无法添加
@@ -89,6 +90,12 @@ class ModelControls {
         function onMouseDown(event) {
 
             event.preventDefault();
+
+            // 移除弹窗菜单
+            if(designer.popup){
+                designer.execCmd('REMOVE_SCENE_MENU');
+            }
+
             if(!scope.enabled) return;
 
             var array = getMousePosition(_domElement, event.clientX, event.clientY);
@@ -102,13 +109,19 @@ class ModelControls {
         function onMouseUp(event) {
 
             event.preventDefault();
+
             if(!scope.enabled) return;
+
+
+
+            forDomPosition.set(event.clientX, event.clientY);
 
             var array = getMousePosition(_domElement, event.clientX, event.clientY);
             onUpPosition.fromArray(array);
 
             console.log('startADDING',scope.startADDING);
-            if (scope.startADDING) {
+            // 点击鼠标左键添加板材
+            if (scope.startADDING && event.button == 0) {
 
                 if (onDownPosition.distanceTo(onUpPosition) === 0) {
 
@@ -139,7 +152,7 @@ class ModelControls {
                 }
 
             } else {
-                handleClick();
+                handleClick(event);
             }
 
 
@@ -147,7 +160,7 @@ class ModelControls {
 
         }
 
-        function handleClick() {
+        function handleClick(event) {
 
             // 当点击过程中鼠标无移动的情况下，避免移动、旋转场景事件混乱
             if (onDownPosition.distanceTo(onUpPosition) === 0) {
@@ -156,9 +169,14 @@ class ModelControls {
 
                 if (intersects.length > 0) {
 
+                    // 标记当前位置是否有板材；
+                    let hasBorad = false;
+
                     for(let i in intersects){
 
                         if(!intersects[i].object.isModelFace && intersects[i].object.geometry instanceof THREE.BoxGeometry){
+
+                            hasBorad = true;
 
                             if(designer.selectedBoard != intersects[i].object){
 
@@ -170,7 +188,7 @@ class ModelControls {
                                 // 显示标尺
                                 if(designer.GLOBAL_CONFIG.showRuler){
 
-                                    let geoVerticesTure = getGeometrySizeOptions(object)
+                                    let geoVerticesTure = getGeometrySizeOptions(object);
 
 
                                     // 判断当前是否有模型，没有则添加，有则转换
@@ -183,10 +201,6 @@ class ModelControls {
 
                                     });
 
-
-
-
-
                                 }
 
                                 // 标记面板 list 选择状态
@@ -195,19 +209,37 @@ class ModelControls {
 
                             break
                         }
-                        designer.selectedBoard = null
-                        deleteHelps('Click')
+                        designer.selectedBoard = null;
+                        deleteHelps('Click');
                         // deleteMeshSetPlane()
+
+
                     }
 
-
+                    if(event.button == 2){
+                        if(hasBorad){
+                            // 右键板材设置弹窗
+                            designer.execCmd('BOARD_MENU', forDomPosition);
+                        }else{
+                            // 右键全局场景弹窗
+                            designer.execCmd('SCENE_MENU', forDomPosition);
+                        }
+                    }
 
 
                 } else {
 
-                    designer.selectedBoard = null
-                    deleteHelps('Click')
+                    designer.selectedBoard = null;
+                    deleteHelps('Click');
                     // deleteMeshSetPlane()
+
+                    // 右键全局场景弹窗
+                    if(event.button == 2){
+                        designer.execCmd('SCENE_MENU', forDomPosition);
+                    }else{
+                        // 移除弹窗菜单
+                        designer.execCmd('REMOVE_SCENE_MENU');
+                    }
 
                 }
 
@@ -215,6 +247,7 @@ class ModelControls {
             }
 
         }
+
 
 
         function handleHove(point) {
