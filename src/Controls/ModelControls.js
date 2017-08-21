@@ -66,7 +66,15 @@ class ModelControls {
 				designer.scene.add(scope.cubeForPreview)
 			}
 		})
+                // 获取是否开始添加
+        designer.cmds.GET_ISREADY_INSERT.add ( (callback) =>{
+			
+            if(typeof callback == 'function'){
 
+                callback(scope.startADDING);
+            }
+
+		})
 
 
         _domElement.addEventListener('mousemove', onMouseMove, false);
@@ -135,10 +143,10 @@ class ModelControls {
 
                         joinBoardToSecen();
 
-                        // appendObjectsList()
+                        // appendObjectsList();
                     } else {
 
-                        // cancelAdding()
+                        // cancelAdding();
                         if(!spaceEnough){
                             alert('空间不足')
                         }

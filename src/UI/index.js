@@ -12,6 +12,9 @@ class UI {
     constructor(designer ,data , uiSizeData){
 
         new LibarySidebar(designer ,data.libaryData,uiSizeData.libaryWidth);
+        new OptionSidebar(designer ,{
+            uiWidth :uiSizeData.optionsWidth
+        });
         new BottomMenu(designer);
 
         // 绑定命令

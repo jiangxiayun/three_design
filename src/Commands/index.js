@@ -86,17 +86,17 @@ class Commands {
 		designer.cmds.ADD_MODEL.add( (options) =>{
 
 
-			let model = addModel( designer.scene ,options);
+        		let model = addModel( designer.scene ,options);
 
-			designer.currentModel = model;
-            designer.GLOBAL_CONFIG.modelSize = {
-                width:options.width,
-                height:options.height,
-                depth:options.depth,
-            }
+        		designer.currentModel = model;
+                    designer.GLOBAL_CONFIG.modelSize = {
+                        width:options.width,
+                        height:options.height,
+                        depth:options.depth,
+                    }
 
-            designer.sceneObjects = [...(Object.values(model.faces))]
-            designer.modelControls.enabled = true;   // 激活 modelControls
+                    designer.sceneObjects = [...(Object.values(model.faces))]
+                    designer.modelControls.enabled = true;   // 激活 modelControls
 
 		})
 
@@ -116,31 +116,32 @@ class Commands {
         	designer.sceneObjects.push(board.obj);
         })
 
-		// 修改板材
-        designer.cmds.SET_BOARD.add( (type , options) =>{
 
-        	let board = designer.selected ;
+        // 修改板材
+        designer.cmds.SET_BOARD.add( (options) =>{
+                // debugger;
+                let board = _.find(designer.boards, o => o.obj.uuid == designer.selectedBoard.uuid);
 
-        	switch(type){
+                    console.log(board,options)
+                switch(options.type){
 
-        		case 'size' :
-        			setBoardSize(board , options);
-        			break;
-        		case 'position' :
-        			setBoardPosition(board , options);
-        			break;
-        		case 'rotation' :
-        			setBoardRotation(board , options);
-        			break;
-        		case 'texture' :
-        			setBoardTexture(board , options);
-        			break;
+                        case 'size' :
+                                setBoardSize(board , options.data);
+                                break;
+                        case 'position' :
+                                setBoardPosition(board , options.data);
+                                break;
+                        case 'rotation' :
+                                setBoardRotation(board , options.data);
+                                break;
+                        case 'texture' :
+                                setBoardTexture(board , options.data);
+                                break;
 
-        	}
+                }
 
 
         })
-
 		// 删除板材
         designer.cmds.REMOVE_BOARD.add( ( ) =>{
 

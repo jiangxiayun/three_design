@@ -19,16 +19,7 @@ class VerticalBoard extends Board {
 		
 	}
 
-	setSize(size){
 
-	}
-
-	setPosition(pos){
-
-	}
-	setRotation(pos){
-
-	}
 }
 
 export default VerticalBoard;

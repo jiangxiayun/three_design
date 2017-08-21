@@ -60,19 +60,22 @@ class Designer {
         this.animation_close = false; // 关闭门板动画标记
 
         this.cmds = {
+           
 
-            ADD_MODEL : new Signal(),
-            CHANGE_MODEL :  new Signal(),
-            ADD_BOARD : new Signal(),
-            SET_BOARD : new Signal(),
-            REMOVE_BOARD : new Signal(),
-            CHANGE_MODE : new Signal(),
-            SELECT_BOARD : new Signal(),
+            ADD_MODEL : new Signal(),   //添加模型
+            CHANGE_MODEL :  new Signal(),   //更换模型
+            ADD_BOARD : new Signal(),   //添加板材
+            SET_BOARD : new Signal(),   //修改板材
+            
+            REMOVE_BOARD : new Signal(),    //删除板材
+            SELECT_BOARD : new Signal(),    //选中板材
+
+            CHANGE_MODE : new Signal(), //修改模式
 
 
-            GET_CURRENT_MODEL : new Signal(),
-            GET_SELECTED_BOARD : new Signal(),
-            GET_ALL_BOARD : new Signal(),
+            GET_CURRENT_MODEL : new Signal(),   //获取当前模型
+            GET_SELECTED_BOARD : new Signal(),  //获取当前选中的板材
+            GET_ALL_BOARD : new Signal(),   //获取所有板材
 
             GET_CURRENT_RULER : new Signal(),
 
@@ -81,11 +84,13 @@ class Designer {
             HRLPER_HIDE_RULER:  new Signal(),
 
 
-            LOAD_OBJECT : new Signal(),
-            EXPORT_OBJECT : new Signal(),
+            LOAD_OBJECT : new Signal(), //导入obj
+            EXPORT_OBJECT : new Signal(),   //导出obj
 
 
-            READY_INSERT_BOARD : new Signal(),
+            READY_INSERT_BOARD : new Signal(),  //准备插入板材
+            GET_ISREADY_INSERT : new Signal(),  //获取准备添加的板材
+
 
 
             SHOW_BOARD_OPTIONS : new Signal(),

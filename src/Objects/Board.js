@@ -13,7 +13,7 @@ class Board {
 
 	constructor(options){
 	
-		this.size = options.size;
+		// this.size = options.size;
 		this.id = options.id ;
 		this.name = options.name;
 		this.length = options.length;
@@ -32,6 +32,26 @@ class Board {
 
 	joinScene(scene){
 		scene.add(this.obj);
+	}
+
+	removeSelf(scene){
+
+	}
+
+	setSize(size){
+		let geoSize = this.obj.geometry.parameters;
+        this.obj.scale.x = size.width / geoSize.width;
+        this.obj.scale.y = size.height / geoSize.height;
+        this.obj.scale.z = size.depth / geoSize.depth;
+		console.log("dsad")
+	}
+	setPosition(pos){
+		this.obj.position.copy(pos); 
+	}
+	setRotation(rot){
+		this.obj.rotation.x = rot.x;
+		this.obj.rotation.y = rot.y;
+		this.obj.rotation.z = rot.z;
 	}
 
 }

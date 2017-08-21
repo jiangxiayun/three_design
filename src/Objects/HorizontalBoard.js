@@ -25,16 +25,15 @@ class HorizontalBoard extends Board {
 	}
 
 	
-	setSize(size){
+	// setSize(size){
+		
 
-	}
+	// 	this.obj.scale.x = size.length / this.obj.geometry.parameters.width;
+	// 	this.obj.scale.y = size.width / this.obj.geometry.parameters.height;
+	// 	this.obj.scale.z = size.thickness / this.obj.geometry.parameters.depth;
+	// }
 
-	setPosition(pos){
-
-	}
-	setRotation(pos){
-
-	}
+	
 }
 
 export default HorizontalBoard;

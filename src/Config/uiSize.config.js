@@ -7,5 +7,6 @@ export default {
      panelSize : {
          width : window.innerWidth - libaryWidth ,
          height :window.innerHeight - 50 - 30
-     }
+     },
+      optionsWidth : 250
 }
