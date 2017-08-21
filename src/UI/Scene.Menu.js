@@ -82,8 +82,8 @@ class SceneMenu extends UIComponent {
                 item = `<div class="ui dropdown item">
                     全部门板<i class="dropdown icon"></i>
                     <div class="menu">
-                      <a class="item" id="openDoors"><i class="edit icon"></i> 打开</a>
-                      <a class="item" id="closeDoors"><i class="globe icon"></i> 关闭</a>
+                      <a class="item" id="openDoors"><i class="clone icon"></i> 打开</a>
+                      <a class="item" id="closeDoors"><i class="sign in icon"></i> 关闭</a>
                     </div>
                   </div>`
             }
