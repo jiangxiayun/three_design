@@ -105,10 +105,13 @@ class LibarySidebar extends UIComponent {
             // designer.modelControls.beginInsert(designer, boardData)
             designer.execCmd('READY_INSERT_BOARD',boardData);
 
+            // 还原打开的门板，还不确定此处是否需要还原
+            // designer.execCmd('ANIMATION_RESET');
         })
 
         // 模型点击
         $("body").on("click",'#libary .model',function(e) {
+
 
             // TODO:获取模型数据
             let modelData = _.find(

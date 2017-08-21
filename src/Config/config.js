@@ -14,6 +14,27 @@ export const MODELCONFIG = {
     MODEL_FACE_DEPTH: 0.2     // 模型平面厚度
 };
 
+
+// 动画
+export const ANIMATIONCONFIG = {
+    time: 128,     // 动画时间，秒 * 64
+    rad: Math.PI / 3  // 翻门弧度 60°
+};
+
+// 门板打开方向，板的类型（朝向）不同，对应翻面也不同，
+export const DIRECTION = [
+    // 翻面
+    'turn-up', // 从下往上翻
+    'turn-down',
+    'turn-left',
+    'turn-right',
+
+    // 移门
+    'move-left',
+    'move-right',
+]
+
+
 export const windowVector = function (camera, dom, vector){
 
     let projectVector = vector.clone().project(camera); // 三维坐标在摄影机上的投影坐标

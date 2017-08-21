@@ -1,9 +1,10 @@
 
 import * as THREE from "three";
-import {TEXTURECONFIG} from "../Config/config"
-import  RulerSet from "../UI/Ruler.Set";
+import {TEXTURECONFIG, ANIMATIONCONFIG} from "../Config/config"
+import {AnimationAction, AnimationSign} from "../Controls/Animation"
 
 const initSysHelpers = Symbol('initSysHelpers');
+const animationAction = Symbol('animationAction');
 
 /**
  * 视角类  主要处理页面的render 和一些初始化工作
@@ -39,8 +40,10 @@ class Viewport {
         // renderer.shadowMapEnabled = THREE.PCFSoftShadowMap;
 
         // 添加helper
-        this[initSysHelpers]( scene ); 
+        this[initSysHelpers]( scene );
 
+        let step = 1;
+        let rotationRad = ANIMATIONCONFIG.rad / ANIMATIONCONFIG.time;
 
         const render =  () => {
             if(scope.updateQueue.length >0){
@@ -48,6 +51,33 @@ class Viewport {
                     update();
                 });
             }
+
+            // 动画——打开门板
+            if(designer.animation_open){
+
+                if (step > ANIMATIONCONFIG.time){
+                    // 标记状态
+                    AnimationSign(designer.animationObject, 'hasOpen');
+                    designer.animation_open = false;
+                    step = 1;
+                }else{
+                    AnimationAction(designer.animationObject, rotationRad, step, 'open');
+                    step ++;
+                }
+            }
+            // 动画——关闭门板
+            if(designer.animation_close){
+                if (step > ANIMATIONCONFIG.time){
+                    AnimationSign(designer.animationObject, 'hasClose');
+                    designer.animation_close = false;
+                    step = 1;
+                }else{
+                    AnimationAction(designer.animationObject, rotationRad, step, 'close');
+                    step ++;
+                }
+            }
+
+
 
             
             requestAnimationFrame(render);
@@ -86,6 +116,8 @@ class Viewport {
         let axsi = new THREE.AxisHelper(2500);
         scene.add(axsi);
     }
+
+
 
 
 

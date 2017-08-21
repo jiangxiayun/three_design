@@ -377,7 +377,7 @@ class ModelControls {
             /*沿点击面的面向量方向延伸0.1个单位*/
             if( selectedObject.object.isModelFace){
 
-                let mesh = selectedObject.object
+                let mesh = selectedObject.object;
                 if(mesh.position.x == createBox.width + MODELCONFIG.MODEL_FACE_DEPTH / 2){
                     faceNormal.set(-0.1,0,0)
                 }

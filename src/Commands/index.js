@@ -12,6 +12,7 @@ import addRulerHelper from "./addRuler.command.js";
 import changeRulerHelper from "./changeRuler.command.js";
 import hideRulerHelper from "./hideRuler.command.js";
 import { addScenePopupMenu } from "./setSceneMenu.command.js";
+import { AnimationReset } from "../Controls/Animation";
 
 
 import _ from "lodash";
@@ -163,17 +164,60 @@ class Commands {
 
 		// 右键全局场景弹窗
         designer.cmds.SCENE_MENU.add((position) => {
-            designer.popup = addScenePopupMenu(designer, position, 'global')
-
+			if(designer.popup){
+                designer.popup = addScenePopupMenu(designer, position, 'global', 'change')
+			}else{
+                designer.popup = addScenePopupMenu(designer, position, 'global', 'new')
+			}
 		})
 		// 右键板材设置弹窗
         designer.cmds.BOARD_MENU.add((position) => {
-            designer.popup = addScenePopupMenu(designer, position, 'board')
+            if(designer.popup){
+                designer.popup = addScenePopupMenu(designer, position, 'board', 'change')
+            }else{
+                designer.popup = addScenePopupMenu(designer, position, 'board', 'new')
+            }
         })
 		// 移除场景弹窗菜单
         designer.cmds.REMOVE_SCENE_MENU.add(() => {
             designer.popup.clearDom()
         })
+
+
+        // 普通板材转换为门板
+        designer.cmds.TRANSFORM_BOARD_TO_DOOR.add(() => {
+            designer.execCmd('GET_SELECTED_BOARD',function (selectedBoard) {
+                selectedBoard.effectType = {
+                    type: 'door',
+                    direction: 'turn-left',
+                    canOpen: true
+                }
+                designer.animationObject.push(selectedBoard);
+            });
+
+            // console.log(designer.animationObject)
+        })
+
+        // 门板转换为抽屉
+        designer.cmds.TRANSFORM_DOOR_TO_DRAWER.add(() => {
+            designer.execCmd('GET_SELECTED_BOARD',function (selectedBoard) {
+                selectedBoard.effectType.type = 'drawer';
+                selectedBoard.effectType.direction = 'turn-left';
+            });
+
+        })
+
+        // 抽屉转换为门板
+        designer.cmds.TRANSFORM_DRAWER_TO_DOOR.add(() => {
+
+            designer.execCmd('GET_SELECTED_BOARD',function (selectedBoard) {
+                selectedBoard.effectType.type = 'door';
+                selectedBoard.effectType.direction = 'turn-left';
+            });
+        })
+
+
+
 	}
 
     [addHelperCommand](designer){
@@ -202,6 +246,12 @@ class Commands {
         })
 
 
+		// 还原门板位置
+        designer.cmds.ANIMATION_RESET.add( () =>{
+
+            AnimationReset( designer.animationObject );
+
+        })
 	}
 }
 

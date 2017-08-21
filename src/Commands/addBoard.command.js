@@ -19,6 +19,9 @@ const addBoard = (designer ,options) =>{
 			break;
 	}
     board.obj.selfFaceType = options.type;
+    board.obj.effectType = {
+    	type: 'board'
+	};
     board.obj.name = 'board_'+designer.currentIndex;
 	board.joinScene(designer.scene);
     designer.currentIndex++;

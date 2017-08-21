@@ -31,7 +31,7 @@ class Designer {
         this.renderer = null;
 
         this.boards = [];
-        // this.currentFaces = [];
+        this.animationObject = []; // 存放有打开，关闭动画效果的 mesh
 
         this.sceneObjects = [];  // 存放所有需要检测的 boards 和 model-faces
 
@@ -55,6 +55,9 @@ class Designer {
             addPreviewSet: false, // 预览
             showRuler: false, // 标尺
         }
+
+        this.animation_open = false; // 打开门板动画标记
+        this.animation_close = false; // 关闭门板动画标记
 
         this.cmds = {
 
@@ -91,8 +94,13 @@ class Designer {
 
             SCENE_MENU : new Signal(),
             BOARD_MENU : new Signal(),
-            REMOVE_SCENE_MENU : new Signal()
+            REMOVE_SCENE_MENU : new Signal(),
 
+
+            ANIMATION_RESET : new Signal(),
+            TRANSFORM_BOARD_TO_DOOR : new Signal(),
+            TRANSFORM_DOOR_TO_DRAWER : new Signal(),
+            TRANSFORM_DRAWER_TO_DOOR : new Signal(),
         }
     }
 
