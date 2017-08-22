@@ -34,10 +34,10 @@ class BoardControls {
 		}
 
 		function onMouseDown  (event)  {
-			
+
 			event.preventDefault();
-			if(scope.enable && designer.boards.length > 0 && designer){
-				console.log("dsa")
+			if(scope.enable && designer.boards.length > 0 && designer && event.button ==0){
+
 				let boardMeshs = _.map(designer.boards , "obj");
 				
 				let targetBoardMesh  =  intersectObjects(event,boardMeshs);
@@ -51,9 +51,13 @@ class BoardControls {
 						designer.selectedBoard = targetBoard.obj;
 						
 						designer.execCmd('SHOW_BOARD_OPTIONS',targetBoard)
+					}else{
+						designer.execCmd('HIDE_BOARD_OPTIONS')
 					}
 				})
 				
+			}else{
+				designer.execCmd('HIDE_BOARD_OPTIONS')
 			}
 		}
 
