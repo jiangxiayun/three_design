@@ -5,7 +5,7 @@ import { BOARDCONFIG, TEXTURECONFIG, MODELCONFIG } from "../Config/config"
 const planeMaterial = new THREE.MeshBasicMaterial( {color: 0xe8c582, transparent: true, opacity: 0.2} );  // 操作区域平面原始材质
 const TextureLoader = new THREE.TextureLoader();
 
-
+const lineForHelper = new THREE.LineBasicMaterial( { color: 0xffffff,side: THREE.DoubleSide } );
 
 class ModelControls {
 
@@ -246,7 +246,10 @@ class ModelControls {
                         designer.execCmd('SCENE_MENU', forDomPosition);
                     }else{
                         // 移除弹窗菜单
-                        designer.execCmd('REMOVE_SCENE_MENU');
+                        if(designer.popup){
+                            designer.execCmd('REMOVE_SCENE_MENU');
+                        }
+
                     }
 
                 }
@@ -905,10 +908,19 @@ class ModelControls {
                 if(_highlightBoxHover){
                     updateHighlightBox(_highlightBoxHover,object )
                 }else{
-                    let bbox = new THREE.BoxHelper(object, 0xffffff);
-                    bbox.name = 'hightBoxHover'
+                    // let bbox = new THREE.BoxHelper(object, 0xffffff);
+                    // bbox.name = 'hightBoxHover'
+                    // _scene.add(bbox);
+                    // _highlightBoxHover = bbox
+
+                    let bbox = new THREE.LineSegments( new THREE.EdgesGeometry( object.geometry ), lineForHelper);
+                    bbox.name = 'hightBoxHover';
+                    bbox.position.copy(object.position);
+                    bbox.rotation.copy(object.rotation);
+                    bbox.scale.copy(object.scale);
                     _scene.add(bbox);
                     _highlightBoxHover = bbox
+
                 }
             }
 
@@ -916,8 +928,12 @@ class ModelControls {
                 if(_highlightBoxClick){
                     updateHighlightBox(_highlightBoxClick,object )
                 }else{
-                    let bbox = new THREE.BoxHelper(object, 0xffffff);
-                    bbox.name = 'hightBoxClick'
+                    // let bbox = new THREE.BoxHelper(object, 0xffffff);
+                    let bbox = new THREE.LineSegments( new THREE.EdgesGeometry( object.geometry ),lineForHelper);
+                    bbox.name = 'hightBoxClick';
+                    bbox.position.copy(object.position);
+                    bbox.rotation.copy(object.rotation);
+                    bbox.scale.copy(object.scale);
                     _scene.add(bbox);
                     _highlightBoxClick = bbox
                 }
@@ -946,7 +962,11 @@ class ModelControls {
 
         function updateHighlightBox(_box, _mesh) {
 
-            _box.setFromObject(_mesh); // 更新盒辅助
+            // _box.setFromObject(_mesh); // 更新盒辅助
+            _box.geometry = new THREE.EdgesGeometry( _mesh.geometry );
+            _box.position.copy(_mesh.position);
+            _box.rotation.copy(_mesh.rotation);
+            _box.scale.copy(_mesh.scale);
             _box.visible = true;
 
         }
