@@ -44,9 +44,9 @@ class OptionSidebar extends UIComponent {
                 depth : this.$wrapper.find('[name=depth]').val()
             },
             position : {
-                x : this.$wrapper.find('[name=posX]').val(),
-                y : this.$wrapper.find('[name=posY]').val(),
-                z : this.$wrapper.find('[name=posZ]').val()
+                x : Number(this.$wrapper.find('[name=posX]').val()),
+                y : Number(this.$wrapper.find('[name=posY]').val()),
+                z : Number(this.$wrapper.find('[name=posZ]').val())
             },
             rotation : {
                 x : this.$wrapper.find('[name=rotX]').val(),

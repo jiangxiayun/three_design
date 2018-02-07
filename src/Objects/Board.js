@@ -46,7 +46,7 @@ class Board {
 		console.log("dsad")
 	}
 	setPosition(pos){
-		this.obj.position.copy(pos); 
+		this.obj.position.copy(pos);
 	}
 	setRotation(rot){
 		this.obj.rotation.x = rot.x;
